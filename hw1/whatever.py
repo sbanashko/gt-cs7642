@@ -2,56 +2,10 @@
 CS 7642 Homework 1
 Dan Frakes | dfrakes3
 """
-import numpy as np
 from mdptoolbox import mdp
 
-from util import build_transition_matrix, build_reward_matrix
-
-''' Examples with answers on HW sheet '''
-examples = [{
-    'N': 21,
-    'B': [1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0]
-}, {
-    'N': 22,
-    'B': [1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0]
-}, {
-    'N': 6,
-    'B': [1, 1, 1, 0, 0, 0]
-}]
-
-''' Problems on website '''
-problems = [{
-    'N': 24,
-    'B': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0,
-          0]
-}, {
-    'N': 23,
-    'B': [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-}, {
-    'N': 12,
-    'B': [0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
-}, {
-    'N': 10,
-    'B': [0, 1, 0, 1, 1, 0, 0, 1, 1, 0]
-}, {
-    'N': 15,
-    'B': [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1]
-}, {
-    'N': 8,
-    'B': [0, 1, 0, 0, 0, 1, 0, 0]
-}, {
-    'N': 6,
-    'B': [0, 1, 1, 0, 1, 0]
-}, {
-    'N': 20,
-    'B': [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1]
-}, {
-    'N': 20,
-    'B': [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0]
-}, {
-    'N': 21,
-    'B': [0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
-}]
+from util import *
+from problems import *
 
 
 def run_program(N, B):
@@ -75,11 +29,15 @@ def run_program(N, B):
     # State is bankroll, from 0 to N*max_timesteps (inclusive)
     states = range(N * max_timesteps + 1)
 
+    # Extra state for each possible bankroll to indicate terminal state
+    states *= 2
+
     # Actions are always roll or quit, encoded to {0, 1}
     actions = [0, 1]
 
     T = build_transition_matrix(len(states), N, B)
     R = build_reward_matrix(len(states))
+    print R
 
     # Gamma is 1 since we don't value future reward any less than immediate
     gamma = 1.0
@@ -87,7 +45,8 @@ def run_program(N, B):
     # Arbitrary threshold epsilon
     epsilon = 0.01
 
-    vi = mdp.ValueIteration(T, R, gamma, epsilon)
+    vi = mdp.ValueIteration(T, R, gamma, epsilon, max_iter=1000)
+    vi.setVerbose()
     vi.run()
 
     # last_roll = 0
@@ -108,5 +67,11 @@ def run_program(N, B):
 
 
 ''' Let's do this thing'''
-for e in examples:
-    run_program(e['N'], e['B'])
+e = examples[2]
+run_program(e['N'], e['B'])
+
+# for e in examples:
+#     run_program(e['N'], e['B'])
+
+# for p in problems:
+#     run_program(p['N'], p['B'])
