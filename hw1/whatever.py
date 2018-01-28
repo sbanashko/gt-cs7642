@@ -50,8 +50,8 @@ def run_program(N, B):
 # e = examples[0]
 # run_program(e['N'], e['B'])
 
-for e in examples:
-    run_program(e['N'], e['B'])
+# for e in examples:
+#     run_program(e['N'], e['B'])
 
-# for p in problems:
-#     run_program(p['N'], p['B'])
+for p in problems:
+    run_program(p['N'], p['B'])
