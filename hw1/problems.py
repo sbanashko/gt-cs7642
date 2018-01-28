@@ -3,6 +3,12 @@ Examples from HW sheet
 Problems from website
 """
 
+''' Dummy very simple '''
+dummy = [{
+    'N': 2,
+    'B': [1, 0]
+}]
+
 ''' Examples with answers on HW sheet '''
 examples = [{
     'N': 21,

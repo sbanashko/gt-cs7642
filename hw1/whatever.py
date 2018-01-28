@@ -10,7 +10,7 @@ from problems import *
 
 def run_program(N, B):
     # Arbitrary threshold to consider realistic horizon
-    threshold = 0.000001
+    threshold = 0.01
 
     # Iterator variables
     timestep = 0
@@ -37,7 +37,6 @@ def run_program(N, B):
 
     T = build_transition_matrix(len(states), N, B)
     R = build_reward_matrix(len(states))
-    print R
 
     # Gamma is 1 since we don't value future reward any less than immediate
     gamma = 1.0
@@ -67,7 +66,7 @@ def run_program(N, B):
 
 
 ''' Let's do this thing'''
-e = examples[2]
+e = dummy[0]
 run_program(e['N'], e['B'])
 
 # for e in examples:
