@@ -16,7 +16,10 @@ valueEstimates - vector of initial value estimates for each state
 rewards - vector of rewards for each transition
 """
 
+import numpy as np
 from scipy import optimize
+
+from problems import problems
 
 
 class State:
@@ -24,11 +27,6 @@ class State:
         self.v = v
         self.e = e
 
-
-probToState = 0.5
-valueEstimates = [0, 3, 8, 2, 1, 2, 0]
-states = [State(v) for v in valueEstimates]
-rewards = [0, 0, 0, 4, 1, 1, 1]
 
 max_lookahead = 5  # maximum_lookahead
 timesteps = range(1, 7)
@@ -63,11 +61,15 @@ def step_estimate(state_seq, reward_seq, k):
     return sum([reward_seq[i] for i in range(k)]) + state_seq[k].v - state_seq[0].v
 
 
-def _generate_model_sequence():
+def _generate_model_sequence(problem):
     """
     Specific to HW2 provided MDP, DON'T REUSE THIS CODE!
     :return:
     """
+    probToState = problem.probToState
+    rewards = problem.rewards
+    states = [State(v) for v in problem.valueEstimates]
+
     state_sequence = [states[0],
                       State(v=probToState * states[1].v + (1 - probToState) * states[2].v),
                       states[3],
@@ -84,19 +86,35 @@ def _generate_model_sequence():
     return state_sequence, reward_sequence
 
 
-def TD(lambda_val):
-    state_seq, reward_seq = _generate_model_sequence()
+def TD(lambda_val, problem):
+    state_seq, reward_seq = _generate_model_sequence(problem)
+    # for i in range(1, max_lookahead + 1):
+    #     print step_estimate(state_seq, reward_seq, i)
+    #     print step_weight(lambda_val, i)
+    # print sum([step_weight(lambda_val, i) for i in range(1, max_lookahead + 1)])
     return sum([step_weight(lambda_val, k) * step_estimate(state_seq, reward_seq, k) for k in range(1, max_lookahead + 1)])
 
 
-def fn(lambda_val):
-    return TD(lambda_val) - TD(1)
+def fn(lambda_val, problem):
+    return TD(lambda_val, problem) - TD(1, problem)
 
 
-# Example from Piazza @126
-for ld in [0, 0.4, 1]:
-    print 'TD({}) = {}'.format(ld, TD(ld))
-    print '=' * 80
+def solve_problem(p):
+    print optimize.newton(fn, 0.0, args=(p, ))
 
-# print optimize.newton(fn, 0.0, maxiter=1000)
-# print optimize.brentq(fn, 0.1, 0.9)
+
+for idx, p in enumerate(problems):
+    for guess in np.linspace(0.9, 0.0, 100):
+        # print '...', guess
+        try:
+            solution = optimize.newton(fn, guess, args=(p, ))
+            if solution < 0.99:
+                print 'Problem {}: {}'.format(idx + 1, solution)
+                print '    TD(1) = {} and TD({}) = {}'.format(TD(1, p), solution, TD(solution, p))
+                break
+        except:
+            pass
+
+# print TD(1, problems[2])
+# print '=' * 80
+# print TD(0.4956709, problems[2])
