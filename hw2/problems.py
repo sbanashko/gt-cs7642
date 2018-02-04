@@ -5,18 +5,35 @@ Problems from website
 
 
 class Problem:
-    def __init__(self, probToState, valueEstimates, rewards):
+    def __init__(self, probToState, valueEstimates, rewards, solution=1):
         self.probToState = probToState
         self.valueEstimates = valueEstimates
         self.rewards = rewards
+        self.solution = solution
+        self.test = self.solution != 1
 
 
 # Example from Piazza
 problems = [
-    # Problem(0.5, [0, 3, 8, 2, 1, 2, 0], [0, 0, 0, 4, 1, 1, 1]),
-    # Problem(0.81, [0.0, 4.0, 25.7, 0.0, 20.1, 12.2, 0.0], [7.9, -5.1, 2.5, -7.2, 9.0, 0.0, 1.6]),
-    # Problem(0.22, [0.0, -5.2, 0.0, 25.4, 10.6, 9.2, 12.3], [-2.4, 0.8, 4.0, 2.5, 8.6, -6.4, 6.1]),
-    # Problem(0.64, [0.0, 4.9, 7.8, -2.3, 25.5, -10.2, -6.5], [-2.4, 9.6, -7.8, 0.1, 3.4, -2.1, 7.9]),
+    # Piazza @126 Example
+    # Problem(probToState=0.5,
+    #         valueEstimates=[0, 3, 8, 2, 1, 2, 0],
+    #         rewards=[0, 0, 0, 4, 1, 1, 1],
+    #         solution=0.403032),
+
+    # HW Examples
+    # Problem(probToState=0.81,
+    #         valueEstimates=[0.0, 4.0, 25.7, 0.0, 20.1, 12.2, 0.0],
+    #         rewards=[7.9, -5.1, 2.5, -7.2, 9.0, 0.0, 1.6],
+    #         solution=0.6226326309908364),
+    # Problem(probToState=0.22,
+    #         valueEstimates=[0.0, -5.2, 0.0, 25.4, 10.6, 9.2, 12.3],
+    #         rewards=[-2.4, 0.8, 4.0, 2.5, 8.6, -6.4, 6.1],
+    #         solution=0.49567093118984556),
+    # Problem(probToState=0.64,
+    #         valueEstimates=[0.0, 4.9, 7.8, -2.3, 25.5, -10.2, -6.5],
+    #         rewards=[-2.4, 9.6, -7.8, 0.1, 3.4, -2.1, 7.9],
+    #         solution=0.20550275877409016),
 
     # RLDM Problems
     Problem(probToState=0.4,
@@ -50,4 +67,3 @@ problems = [
             valueEstimates=[0.0, 0.0, 13.4, 19.0, 0.0, 24.1, 0.0],
             rewards=[-2.6, -4.4, 0.8, 5.1, -2.3, 0.5, 8.5]),
 ]
-
