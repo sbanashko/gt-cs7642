@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from mdptoolbox.mdp import MDP
+from mdptoolbox.mdp import ValueIteration
+
+# from td import TD
 
 
 def _build_transition_matrix(states):
@@ -32,19 +34,19 @@ S = range(7)
 T = _build_transition_matrix(S)
 R = _build_reward_matrix(S)
 
-print 'Transition matrix:', T.shape
-print T
-
-print '*' * 80
-
-print 'Reward matrix:', R.shape
-print R
-
-gamma = 0.9
+gamma = 1
 epsilon = 1e-6
 max_iter = 100
 
-mdp = MDP(T, R, gamma, epsilon, max_iter)
+vi = ValueIteration(T, R, gamma, epsilon, max_iter)
+
+vi.run()
+
+print vi.V
+
+# TODO replicate S&B Exercise 6.2
+# Estimated state value updates over 100 iterations, initialized at 0.5
+# TD(0) vs TD(1) RMS
 
 # TODO Replicate figure 3
 # error (using best alpha for each lambda) as a function of lambda
