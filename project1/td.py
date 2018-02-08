@@ -66,14 +66,33 @@ def _save_plot(episode):
     plt.close()
 
 
+def _save_error_plot(episode):
+    xvals = range(1, len(states) - 1)
+    plt.plot(xvals, [y / 6.0 for y in range(1, 6)], color='black', label='actual')
+    plt.plot(xvals, [s.v for s in states[1:6]], color='blue', label='estimate')
+    plt.xticks(xvals, [s.name for s in states[1:6]])
+    plt.ylim(0.0, 1.0)
+    plt.text(4.3, 0.05, r'T = {}'.format(episode), fontsize=15)
+    plt.legend()
+    plt.savefig(os.path.join('output', '{}.png'.format(str(episode).zfill(4))))
+    plt.close()
+
+
 def TD(lambda_val, debug=False):
+
+    print 'TD({})'.format(lambda_val)
+
     # Save initial plot
     _save_plot(0)
+
+    # Store errors for one plot at end of all episodes
+    td_error = []
+
     for T in range(episodes):
 
         # Update learning rate according to episode
         alpha = 1. / (T + 1)
-
+        episode_error = 0
         idx = 3
         state_sequence = [states[idx]]
 
@@ -96,18 +115,29 @@ def TD(lambda_val, debug=False):
             state_sequence[t - 1].e += 1
 
             for s2 in state_sequence:
-                delta = alpha * s2.e * (state_sequence[t].r + gamma * state_sequence[t].v - state_sequence[t - 1].v)
+                state_error = state_sequence[t].r + gamma * state_sequence[t].v - state_sequence[t - 1].v
+                delta = alpha * s2.e * state_error
                 s2.v += delta
                 s2.e *= lambda_val * gamma
+                episode_error += np.sqrt(pow(state_error, 2))
 
-        _save_plot(T + 1)
+        # _save_plot(T + 1)
 
-    return sum(
-        [step_weight(lambda_val, k) * step_estimate(state_sequence, k) for k in range(1, max_lookahead + 2)])
+        td_error.append(episode_error)
+
+    # Plot error over episodes
+    plt.plot(range(episodes), td_error)
+    plt.savefig(os.path.join('output', 'error.png'))
+    plt.close()
+
+    return sum([step_weight(lambda_val, k) * step_estimate(state_sequence, k) for k in range(1, max_lookahead + 2)]), \
+           np.mean(td_error)
 
 
-TD(0.5)
+results = [TD(ld) for ld in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]]
 
-# ld_vals = np.linspace(0.0, 1.0, 11)
-# plt.plot(ld_vals, [TD(ld) for ld in ld_vals])
-# plt.show()
+# print [results[i][0] for i in range(len(results))]
+
+plt.plot([results[i][0] for i in range(len(results))],
+         [results[i][1] for i in range(len(results))])
+plt.show()
