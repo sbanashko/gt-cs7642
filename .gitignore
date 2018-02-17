@@ -162,3 +162,5 @@ $RECYCLE.BIN/
 *.pyc
 **/output/*
 **/output-report/*
+
+**/output/**
