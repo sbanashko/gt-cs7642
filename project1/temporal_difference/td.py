@@ -1,10 +1,42 @@
 import numpy as np
 
 from project1.models import states
-from project1.settings import DEBUG
+from project1.plots import plot_val_estimates
+from project1.settings import DEBUG, NSTATES, MAX_ITERATIONS
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
+
+
+def _reset_w(nstates):
+    return [0.5 for _ in range(nstates)]
+
+
+def _reset_delta_v(nstates):
+    return [0.0 for _ in range(nstates)]
+
+
+def _generate_episodes(nepisodes):
+
+    episodes = []
+
+    for i in range(nepisodes):
+        # Start in middle state C
+        # 0 <-- A <--> B <--> C <--> D <--> E --> 1
+        # 0     1      2      3      4      5     6
+        idx = 3
+        state_sequence = [states[idx]]
+
+        # Simulate episode
+        while True:
+            if state_sequence[len(state_sequence) - 1].terminal:
+                break
+            idx += 1 if np.random.choice(2) else -1
+            state_sequence.append(states[idx])
+
+        episodes.append(state_sequence)
+
+    return episodes
 
 
 def _step_weight(lambda_val, k):
@@ -34,13 +66,14 @@ def _step_estimate(state_seq, k):
     return sum([state_seq[i].r for i in range(k)]) + state_seq[k].v - state_seq[0].v
 
 
-def TD(lambda_val, alpha_decay_rate=1.0, gamma=1.0, episodes=10, history=True):
+def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=10, history=False):
     """
     Temporal difference learner
     :param lambda_val:
+    :param alpha:
     :param alpha_decay_rate:
     :param gamma:
-    :param episodes:
+    :param num_episodes:
     :param history: if True, return 2D array of state values after each
     episode, otherwise return 1D array of final state values
     :return:
@@ -49,38 +82,74 @@ def TD(lambda_val, alpha_decay_rate=1.0, gamma=1.0, episodes=10, history=True):
         print 'TD({})'.format(lambda_val)
 
     # Store history state values after each episode
-    V = np.ndarray((episodes, len(states) - 2))  # don't care about terminal states
+    V = np.ndarray((num_episodes, NSTATES))  # don't care about terminal states
 
-    for T in range(episodes):
+    # Store episodes to repeatedly present
+    episodes = _generate_episodes(num_episodes)
 
-        # Update learning rate according to episode
-        alpha = 1. / pow(T + 1, alpha_decay_rate)
-        idx = 3
-        state_sequence = [states[idx]]
+    # Flag convergence
+    converged = False
+    iterator = 0
 
-        # Simulate episode
-        while True:
-            if state_sequence[len(state_sequence) - 1].terminal:
-                break
-            idx += 1 if np.random.choice(2) else -1
-            state_sequence.append(states[idx])
+    # Repeatedly present same episodes in training set until convergence
+    while not converged:
 
-        if DEBUG:
-            print 'Episode', T + 1, ':', [s.name for s in state_sequence]
+        # Reset and store deltas of value/weight vector
+        # delta_v = _reset_delta_v(NSTATES)
 
-        # Execute iterative value updates
-        for s in state_sequence:
-            s.e = 0
+        file_counter = 0
 
-        for t in range(1, len(state_sequence)):
-            state_sequence[t - 1].e += 1
+        for T, sequence in enumerate(episodes):
 
-            for s2 in state_sequence:
-                state_error = state_sequence[t].r + gamma * state_sequence[t].v - state_sequence[t - 1].v
-                delta = alpha * s2.e * state_error
-                s2.v += delta
-                s2.e *= lambda_val * gamma
+            # Update learning rate according to episode
+            # alpha = 1. / pow(T + 1, alpha_decay_rate)
+            alpha *= alpha_decay_rate
 
-        V[T] = [states[i].v for i in range(1, len(states) - 1)]  # don't care about terminal states
+            # Execute iterative value updates
+            for s in sequence:
+                s.e = 0
+
+            for t in range(1, len(sequence)):
+                sequence[t - 1].e += 1
+
+                # Equation (1)
+                # State sequence indices = range(t=1...m)
+                for s in sequence:
+                    state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
+                    delta = alpha * s.e * state_error
+
+                    # if not s.terminal:
+                    #     delta_v[s.index - 1] += delta
+
+                    # Uncomment to apply weight update after each TIMESTEP
+                    s.v += delta
+                    # delta_w = _reset_delta_w()
+                    s.e *= lambda_val * gamma
+
+                # Uncomment to apply weight update after each EPISODE
+                # for i in range(nstates):
+                #     w[i] += delta_w[i]
+                # delta_w = _reset_delta_w()
+
+            V[T] = [states[i].v for i in range(1, len(states) - 1)]  # don't care about terminal states
+            # plot_val_estimates(file_counter, [s.v for s in states][1:NSTATES + 1], T, alpha)
+            # file_counter += 1
+
+        # Uncomment to apply weight update after each presentation of TRAINING SET
+        # for i in range(len(delta_v)):
+        #     states[i + 1].v += delta_v[i]
+
+        # Scalar combination of delta_v (i.e. total step size)
+        # print '   ', delta_v
+        # print np.sqrt(sum([pow(dv, 2) for dv in delta_v]))
+
+        iterator += 1
+
+        if iterator >= MAX_ITERATIONS:
+            # print 'Max iterations reached, faking convergence'
+            break
+
+        # fuck it!
+        converged = True
 
     return V if history else V[len(V) - 1]

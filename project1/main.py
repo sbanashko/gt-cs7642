@@ -3,6 +3,8 @@ CS 7642 Sprint 2018
 Project 1
 Dan Frakes | dfrakes3
 """
+import numpy as np
+
 from plots import *
 from project1.settings import *
 from project1.temporal_difference.td import TD
@@ -22,22 +24,32 @@ significant.
 '''
 lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 
-td_vals = np.empty((len(lambda_vals), TRAINING_SETS, NUM_STATES))
+avg_errors = []
 
-for ld_idx, ld in enumerate(lambda_vals):
-    for set_idx in range(TRAINING_SETS):
-        td_vals[ld_idx][set_idx] = TD(ld, history=False)
+# Compute RMSE for 1 lambda value at a time
+for ld in lambda_vals:
 
-# Create array (sets x states) of all state errors for all training sets
-td_errors = np.subtract(td_vals, ACTUAL_STATE_VALUES)
+    # Record converged state value estimates for current lambda
+    td_vals = []
 
-# Calculate RMSE across state predictions for each state
-td_errors = np.sqrt(np.mean(pow(td_errors, 2), axis=1))
+    # Run 100 training sets using lambda value
+    for _ in range(NSETS):
 
-# Average RMSEs across all episodes to return scalar TD error for each lambda
-td_errors = np.array([np.mean(td_errors[i], axis=0) for i in range(len(lambda_vals))])
+        # Capture converged TD state value estimates
+        td_vals.append(TD(ld))
 
-plot(lambda_vals, td_errors)
+    # Create array (sets x states) of all state errors for all training sets
+    td_errors = np.subtract(td_vals, ACTUAL_STATE_VALUES)
+
+    # Calculate RMSE across state predictions for each state
+    td_errors = np.sqrt(np.mean(pow(td_errors, 2), axis=1))
+
+    # Average RMSEs across all training sets to return scalar TD error for each lambda
+    avg_errors.append(np.mean(td_errors))
+
+print avg_errors
+
+plot(lambda_vals, avg_errors)
 
 '''
 Figure 4
@@ -48,7 +60,7 @@ by the learning procedure after a single presentation of a training set.
 This measure was averaged over 100 training sets. The lambda = 1 data points
 represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
-plot_fig4()
+# plot()
 
 '''
 Figure 5
@@ -59,7 +71,7 @@ of a training set. The lambda value is given by the horizontal coordinate. The a
 value was selected from those shown in Figure 4 to yield the lowest error
 for that lambda value.
 '''
-plot_fig5()
+# plot()
 
 '''
 Example 6.2 from Reinforcement Learning: An Introduction (Sutton & Barto, 1998), page 100.
