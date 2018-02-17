@@ -8,6 +8,7 @@ import numpy as np
 from plots import *
 from project1.settings import *
 from project1.temporal_difference.td import TD
+from project1.utils import *
 
 '''
 Figure 3
@@ -22,43 +23,38 @@ data point, the standard error is approximately cr = 0.01, so the differences
 between the Widrow-Hoff procedure and the other procedures are highly
 significant.
 '''
-lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
-
-avg_errors = []
-
-print '*' * 80
-
-# Compute RMSE for 1 lambda value at a time
-for ld in lambda_vals:
-
-    print 'Running TD({})...'.format(ld)
-
-    # Record converged state value estimates for current lambda
-    td_vals = []
-
-    # Run 100 training sets using lambda value
-    for train_set in range(NSETS):
-
-        # Capture converged TD state value estimates
-        td_vals.append(TD(ld, num_episodes=NEPISODES))
-
-        if (train_set + 1) % 10 == 0:
-            print 'Completed {} training sets'.format(train_set + 1)
-
-    # Create array (sets x states) of all state errors for all training sets
-    td_errors = np.subtract(td_vals, ACTUAL_STATE_VALUES)
-
-    # Calculate RMSE across state predictions for each state
-    td_errors = np.sqrt(np.mean(pow(td_errors, 2), axis=1))
-
-    # Average RMSEs across all training sets to return scalar TD error for each lambda
-    avg_errors.append(np.mean(td_errors))
-
-    print '*' * 80
-
-print avg_errors
-
-plot(lambda_vals, avg_errors)
+# lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+#
+# avg_errors = []
+#
+# print '*' * 80
+#
+# # Compute RMSE for 1 lambda value at a time
+# for ld in lambda_vals:
+#
+#     print 'Running TD({})...'.format(ld)
+#
+#     # Record converged state value estimates for current lambda
+#     td_vals = []
+#
+#     # Run 100 training sets using lambda value
+#     for train_set in range(NSETS):
+#
+#         # Capture converged TD state value estimates
+#         # TODO does the training set generation of 10 sequences need to come out here?
+#         td_vals.append(TD(ld, num_episodes=NEPISODES))
+#
+#         if (train_set + 1) % 10 == 0:
+#             print 'Completed {} training sets'.format(train_set + 1)
+#
+#     # Capture RMSE
+#     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+#
+#     print '*' * 80
+#
+# print avg_errors
+#
+# plot(lambda_vals, avg_errors)
 
 '''
 Figure 4
@@ -69,8 +65,34 @@ by the learning procedure after a single presentation of a training set.
 This measure was averaged over 100 training sets. The lambda = 1 data points
 represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
+lambda_vals = [0.0, 0.3, 0.8]
+alpha_vals = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
-# plot()
+# Collect TD values for a single training set using each alpha value
+errors = []
+
+for ld in lambda_vals:
+
+    # Collect TD values as nested array for multiple plots
+    ld_errors = []
+
+    for a in alpha_vals:
+        print u'TD({}) | alpha = {}...'.format(ld, a)
+
+        # Record converged state value estimates for current lambda/alpha combination
+        td_vals = []
+
+        for train_set in range(NSETS):
+            td_vals.append(TD(ld, alpha=a, max_iter=1, num_episodes=NEPISODES))
+
+            if (train_set + 1) % 10 == 0:
+                print 'Completed {} training sets'.format(train_set + 1)
+
+        ld_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+
+    errors.append(ld_errors)
+
+plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$')
 
 '''
 Figure 5

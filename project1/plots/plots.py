@@ -7,13 +7,19 @@ from project1.settings import NSTATES, ACTUAL_STATE_VALUES, OUTPUT_DIR
 
 
 def plot(x, y, xlab=u'$\lambda$', ylab='ERROR'):
-    plt.plot(x, y)
+    plt.plot(x, y, label='test')
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    plt.legend()
+    plt.show()
 
-    # temporary
-    # plt.xlim((0, 1))
-    # plt.ylim((0.04, 0.2))
+
+def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR'):
+    for i in range(len(y)):
+        plt.plot(x, y[i], label=ld_vals[i])
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    plt.legend(loc=2)
     plt.show()
 
 
@@ -28,6 +34,7 @@ def plot_val_estimates(file_counter, state_vals, episode, alpha):
     plt.ylim((0, 1))
     plt.text(4.2, 0.14, 'T = {}'.format(episode))
     plt.text(4.2, 0.10, u'$\\alpha$ = {}'.format(round(alpha, 4)))
+    plt.legend(title='lambda')
     plt.legend(loc=2)
     fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str(file_counter).zfill(4))))
     plt.close()

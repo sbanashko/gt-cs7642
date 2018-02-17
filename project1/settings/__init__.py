@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 # Debug
-DEBUG = True
+DEBUG = False
 
 # Plot output directory
 OUTPUT_DIR = datetime.now().strftime('%Y%m%d_%H%M%S')
