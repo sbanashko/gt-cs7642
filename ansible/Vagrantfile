@@ -1,0 +1,34 @@
+# This vagrant file builds a vements development environment.
+#
+# Once built, you can access it normally via 'vagrant ssh'.  You
+# can also forward ports, for example, the consul ui:
+#
+#  $ vagrant ssh -- -L 8500:localhost:8500
+#
+# The -L option can be repeated for additional ports.
+#
+VAGRANTFILE_API_VERSION = "2"
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu/trusty64"
+
+  # NB:  this value is used in ansible playbook and inventory.
+  config.vm.define 'omscs-rl-vm'
+  config.vm.synced_folder '.', '/home/vagrant/', nfs: true, mount_options:
+   ['rw', 'vers=3', 'tcp', 'fsc' ,'actimeo=2']
+
+  config.vm.network :private_network, ip: "10.87.203.92"
+  config.ssh.forward_agent = true
+
+  config.vm.provider 'virtualbox' do |v|
+    v.memory = 2048
+    v.cpus = 2
+  end
+
+  config.vm.provision 'ansible' do |ansible|
+    ansible.playbook = 'rl.yml'
+    ansible.inventory_path = 'hosts'
+    ansible.verbose = 'vv'
+  end
+end

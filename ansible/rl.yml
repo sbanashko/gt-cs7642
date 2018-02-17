@@ -1,0 +1,5 @@
+---
+
+- hosts: omscs-rl-vm
+  roles:
+    - common
