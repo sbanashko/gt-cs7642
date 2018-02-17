@@ -1,19 +1,26 @@
+import string
+
 import numpy as np
 
-from project1.models import states
-from project1.plots import plot_val_estimates
-from project1.settings import DEBUG, NSTATES, MAX_ITERATIONS, WEIGHT_UPDATE_LOC
+from project1.models.state import State
+from project1.settings import MAX_ITERATIONS, WEIGHT_UPDATE_LOC, NSTATES
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
+
+
+def _reset_states():
+    states = [State(string.ascii_uppercase[i], i + 1, v=0.5, r=0.0) for i in range(NSTATES)]
+    states.insert(0, State('0', 0, v=0.0, r=0.0, terminal=True))
+    states.append(State('1', NSTATES + 1, v=0.0, r=1.0, terminal=True))
+    return states
 
 
 def _reset_delta_v(nstates):
     return [0.0 for _ in range(nstates)]
 
 
-def _generate_episodes(nepisodes):
-
+def _generate_episodes(nepisodes, states):
     episodes = []
 
     for i in range(nepisodes):
@@ -83,8 +90,12 @@ def TD(lambda_val,
     # Store history state values after each episode
     V = np.ndarray((0, NSTATES))  # don't care about terminal states
 
+    # Shit was carrying over from one TD calculation the next!
+    states = _reset_states()
+    print '     ', [s.v for s in states]
+
     # Store episodes to repeatedly present
-    episodes = _generate_episodes(num_episodes)
+    episodes = _generate_episodes(num_episodes, states)
 
     # Flag convergence
     converged = False
@@ -132,6 +143,8 @@ def TD(lambda_val,
         if WEIGHT_UPDATE_LOC == 'trainset':
             for i in range(len(delta_v)):
                 states[i + 1].v += delta_v[i]
+            # FIXME WTF IS GOING ON WITH THESE GIANT DELTAS?!?1
+            print '     ', [s.v for s in states]
             delta_v = _reset_delta_v(NSTATES)
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states

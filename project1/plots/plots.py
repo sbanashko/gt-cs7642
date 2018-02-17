@@ -12,8 +12,8 @@ def plot(x, y, xlab=u'$\lambda$', ylab='ERROR'):
     plt.ylabel(ylab)
 
     # temporary
-    plt.xlim((0, 1))
-    plt.ylim((0.04, 0.2))
+    # plt.xlim((0, 1))
+    # plt.ylim((0.04, 0.2))
     plt.show()
 
 

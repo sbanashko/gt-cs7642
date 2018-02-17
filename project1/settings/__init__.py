@@ -15,7 +15,7 @@ os.mkdir(os.path.join('output', OUTPUT_DIR))
 NSETS = 100
 
 # Number of sequences to run per training set
-NUM_EPISODES = 10
+NEPISODES = 10
 
 # Prevent long-running or infinite loop
 MAX_ITERATIONS = 100
@@ -28,4 +28,4 @@ ACTUAL_STATE_VALUES = [1. * (v + 1) / (NSTATES + 1) for v in range(NSTATES)]
 
 # Weight update locations
 # timestep OR episode OR trainset
-WEIGHT_UPDATE_LOC = 'episode'
+WEIGHT_UPDATE_LOC = 'trainset'
