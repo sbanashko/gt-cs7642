@@ -2,14 +2,10 @@ import numpy as np
 
 from project1.models import states
 from project1.plots import plot_val_estimates
-from project1.settings import DEBUG, NSTATES, MAX_ITERATIONS
+from project1.settings import DEBUG, NSTATES, MAX_ITERATIONS, WEIGHT_UPDATE_LOC
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
-
-
-def _reset_w(nstates):
-    return [0.5 for _ in range(nstates)]
 
 
 def _reset_delta_v(nstates):
@@ -66,7 +62,13 @@ def _step_estimate(state_seq, k):
     return sum([state_seq[i].r for i in range(k)]) + state_seq[k].v - state_seq[0].v
 
 
-def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=10, history=False):
+def TD(lambda_val,
+       alpha=0.3,
+       alpha_decay_rate=0.98,
+       gamma=1.0,
+       num_episodes=10,
+       epsilon=0.001,
+       history=False):
     """
     Temporal difference learner
     :param lambda_val:
@@ -78,11 +80,8 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=10,
     episode, otherwise return 1D array of final state values
     :return:
     """
-    if DEBUG:
-        print 'TD({})'.format(lambda_val)
-
     # Store history state values after each episode
-    V = np.ndarray((num_episodes, NSTATES))  # don't care about terminal states
+    V = np.ndarray((0, NSTATES))  # don't care about terminal states
 
     # Store episodes to repeatedly present
     episodes = _generate_episodes(num_episodes)
@@ -92,12 +91,10 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=10,
     iterator = 0
 
     # Repeatedly present same episodes in training set until convergence
-    while not converged:
+    while not converged and iterator < MAX_ITERATIONS:
 
         # Reset and store deltas of value/weight vector
-        # delta_v = _reset_delta_v(NSTATES)
-
-        file_counter = 0
+        delta_v = _reset_delta_v(NSTATES)
 
         for T, sequence in enumerate(episodes):
 
@@ -118,38 +115,34 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=10,
                     state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
                     delta = alpha * s.e * state_error
 
-                    # if not s.terminal:
-                    #     delta_v[s.index - 1] += delta
+                    # Apply weight update after each TIMESTEP
+                    if WEIGHT_UPDATE_LOC == 'timestep':
+                        s.v += delta
+                    elif not s.terminal:
+                        delta_v[s.index - 1] += delta
+                        s.e *= lambda_val * gamma
 
-                    # Uncomment to apply weight update after each TIMESTEP
-                    s.v += delta
-                    # delta_w = _reset_delta_w()
-                    s.e *= lambda_val * gamma
+                # Apply weight update after each EPISODE
+                if WEIGHT_UPDATE_LOC == 'episode':
+                    for i in range(len(delta_v)):
+                        states[i + 1].v += delta_v[i]
+                    delta_v = _reset_delta_v(NSTATES)
 
-                # Uncomment to apply weight update after each EPISODE
-                # for i in range(nstates):
-                #     w[i] += delta_w[i]
-                # delta_w = _reset_delta_w()
+        # Apply weight update after each presentation of TRAINING SET
+        if WEIGHT_UPDATE_LOC == 'trainset':
+            for i in range(len(delta_v)):
+                states[i + 1].v += delta_v[i]
+            delta_v = _reset_delta_v(NSTATES)
 
-            V[T] = [states[i].v for i in range(1, len(states) - 1)]  # don't care about terminal states
-            # plot_val_estimates(file_counter, [s.v for s in states][1:NSTATES + 1], T, alpha)
-            # file_counter += 1
-
-        # Uncomment to apply weight update after each presentation of TRAINING SET
-        # for i in range(len(delta_v)):
-        #     states[i + 1].v += delta_v[i]
-
-        # Scalar combination of delta_v (i.e. total step size)
-        # print '   ', delta_v
-        # print np.sqrt(sum([pow(dv, 2) for dv in delta_v]))
+        V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 
         iterator += 1
 
         if iterator >= MAX_ITERATIONS:
-            # print 'Max iterations reached, faking convergence'
+            print 'Max iterations reached, faking convergence'
             break
 
-        # fuck it!
-        converged = True
+        # Check Euclidean distance of gradient descent for convergence
+        converged = np.sqrt(np.mean([pow(dv, 2) for dv in delta_v])) < epsilon
 
     return V if history else V[len(V) - 1]

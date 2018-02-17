@@ -25,3 +25,7 @@ NSTATES = 5
 
 # Actual state values, or "ideal predictions"
 ACTUAL_STATE_VALUES = [1. * (v + 1) / (NSTATES + 1) for v in range(NSTATES)]
+
+# Weight update locations
+# timestep OR episode OR trainset
+WEIGHT_UPDATE_LOC = 'episode'

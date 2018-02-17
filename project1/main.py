@@ -29,14 +29,20 @@ avg_errors = []
 # Compute RMSE for 1 lambda value at a time
 for ld in lambda_vals:
 
+    print '*' * 80
+    print 'Running TD({})...'.format(ld)
+
     # Record converged state value estimates for current lambda
     td_vals = []
 
     # Run 100 training sets using lambda value
-    for _ in range(NSETS):
+    for train_set in range(NSETS):
 
         # Capture converged TD state value estimates
         td_vals.append(TD(ld))
+
+        if (train_set + 1) % 10 == 0:
+            print 'Completed {} training sets'.format(train_set + 1)
 
     # Create array (sets x states) of all state errors for all training sets
     td_errors = np.subtract(td_vals, ACTUAL_STATE_VALUES)
