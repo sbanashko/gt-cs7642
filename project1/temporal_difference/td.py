@@ -51,7 +51,7 @@ def _step_estimate(state_seq, k):
 def TD(lambda_val,
        episodes,
        alpha=0.3,
-       alpha_decay_rate=0.98,
+       alpha_decay_rate=0.9,
        gamma=1.0,
        max_iter=MAX_ITERATIONS,
        epsilon=0.001,
@@ -74,7 +74,6 @@ def TD(lambda_val,
 
     # Shit was carrying over from one TD calculation the next!
     states = _reset_states()
-    # print '     ', [s.v for s in states]
 
     # Flag convergence
     converged = False

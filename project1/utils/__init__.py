@@ -25,6 +25,11 @@ def generate_episodes(nepisodes, states):
 
         # Simulate episode
         while True:
+            # Slack experiment: restrict length of episode to control error
+            # COOL
+            if len(state_sequence) > 8:
+                idx = 3
+                state_sequence = [states[idx]]
             if state_sequence[len(state_sequence) - 1].terminal:
                 break
             idx += 1 if np.random.choice(2) else -1
@@ -38,7 +43,8 @@ def generate_episodes(nepisodes, states):
 def rmse(est, actual):
     """
     Helper method to calculate RMSE of TD values
-    :param vals:
+    :param est:
+    :param actual:
     :return:
     """
     # Create array (sets x states) of all state errors for all training sets

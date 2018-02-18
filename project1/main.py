@@ -23,40 +23,40 @@ data point, the standard error is approximately cr = 0.01, so the differences
 between the Widrow-Hoff procedure and the other procedures are highly
 significant.
 '''
-lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
-
-avg_errors = []
-
-# Store episodes to repeatedly present
-episodes = generate_episodes(NEPISODES, reset_states())
-
-print '*' * 80
-
-# Compute RMSE for 1 lambda value at a time
-for ld in lambda_vals:
-
-    print 'Running TD({})...'.format(ld)
-
-    # Record converged state value estimates for current lambda
-    td_vals = []
-
-    # Run 100 training sets using lambda value
-    for train_set in range(NSETS):
-
-        # Capture converged TD state value estimates
-        td_vals.append(TD(ld, alpha=0.05, episodes=episodes, epsilon=1e-2))
-
-        if (train_set + 1) % 10 == 0:
-            print 'Completed {} training sets'.format(train_set + 1)
-
-    # Capture RMSE
-    avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
-
-    print '*' * 80
-
-print avg_errors
-
-plot(lambda_vals, avg_errors)
+# # Store episodes to repeatedly present
+# episodes = generate_episodes(NEPISODES, reset_states())
+#
+# lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
+#
+# avg_errors = []
+#
+# print '*' * 80
+#
+# # Compute RMSE for 1 lambda value at a time
+# for ld in lambda_vals:
+#
+#     print 'Running TD({})...'.format(ld)
+#
+#     # Record converged state value estimates for current lambda
+#     td_vals = []
+#
+#     # Run 100 training sets using lambda value
+#     for train_set in range(NSETS):
+#
+#         # Capture converged TD state value estimates
+#         td_vals.append(TD(ld, alpha=0.05, episodes=episodes, epsilon=5e-4))
+#
+#         if (train_set + 1) % 10 == 0:
+#             print 'Completed {} training sets'.format(train_set + 1)
+#
+#     # Capture RMSE
+#     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+#
+#     print '*' * 80
+#
+# print avg_errors
+#
+# plot(lambda_vals, avg_errors)
 
 '''
 Figure 4
@@ -67,34 +67,36 @@ by the learning procedure after a single presentation of a training set.
 This measure was averaged over 100 training sets. The lambda = 1 data points
 represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
-# lambda_vals = [0.0, 0.3, 0.8]
-# alpha_vals = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-#
-# # Collect TD values for a single training set using each alpha value
-# errors = []
-#
-# for ld in lambda_vals:
-#
-#     # Collect TD values as nested array for multiple plots
-#     ld_errors = []
-#
-#     for a in alpha_vals:
-#         print u'TD({}) | alpha = {}...'.format(ld, a)
-#
-#         # Record converged state value estimates for current lambda/alpha combination
-#         td_vals = []
-#
-#         for train_set in range(NSETS):
-#             td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=episodes))
-#
-#             if (train_set + 1) % 10 == 0:
-#                 print 'Completed {} training sets'.format(train_set + 1)
-#
-#         ld_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
-#
-#     errors.append(ld_errors)
-#
-# plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$')
+lambda_vals = [0.0, 0.3, 0.8, 1.0]
+alpha_vals = np.linspace(0, 0.6, 13)
+training_sets = [generate_episodes(NEPISODES, reset_states()) for _ in range(NSETS)]
+
+for i in training_sets:
+    print [s.name for s in i[5]]
+
+# Collect TD values for a single training set using each alpha value
+errors = []
+
+for ld in lambda_vals:
+
+    # Collect TD values as nested array for multiple plots
+    ld_errors = []
+
+    for a in alpha_vals:
+        # print u'TD({}) | alpha = {}...'.format(ld, a)
+
+        # Record state value estimates for current lambda/alpha combination
+        td_vals = []
+
+        for training_set in training_sets:
+            td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
+
+        ld_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+
+    errors.append(ld_errors)
+
+print errors
+plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$')
 
 '''
 Figure 5
@@ -105,6 +107,7 @@ of a training set. The lambda value is given by the horizontal coordinate. The a
 value was selected from those shown in Figure 4 to yield the lowest error
 for that lambda value.
 '''
+
 # plot()
 
 '''

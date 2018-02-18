@@ -10,13 +10,15 @@ def plot(x, y, xlab=u'$\lambda$', ylab='ERROR'):
     plt.plot(x, y, label='test')
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    plt.legend()
+    # plt.legend()
     plt.show()
 
 
 def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR'):
     for i in range(len(y)):
         plt.plot(x, y[i], label=ld_vals[i])
+    plt.xlim((-0.05, 0.65))
+    plt.ylim((0.05, 0.75))
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     plt.legend(loc=2)
