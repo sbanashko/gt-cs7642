@@ -51,7 +51,7 @@ def _generate_episodes(nepisodes):
     return episodes
 
 
-def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=100):
+def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=101):
     """
     Temporal difference learner
     :param lambda_val:
@@ -71,6 +71,14 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=100
 
     # Store history state values after each episode
     V = np.empty((0, NSTATES))  # don't care about terminal states
+
+    # Store specific value to match example 6.2
+    example_episodes = [0, 1, 10, 100]
+    example_ep_vals = []
+
+    # Initial plot
+    plot_val_estimates(0, alpha)
+    example_ep_vals.append([s.v for s in states][1:NSTATES + 1])
 
     for T, sequence in enumerate(episodes):
 
@@ -92,18 +100,33 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=100
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 
-        plot_val_estimates(file_counter, T + 1, alpha)
-        file_counter += 1
+        plot_val_estimates(T + 1, alpha)
+        if (T + 1) in example_episodes:
+            example_ep_vals.append([s.v for s in states][1:NSTATES + 1])
 
         # Update learning rate according to episode
-        alpha *= alpha_decay_rate
+        # alpha *= alpha_decay_rate
+
+    # Plot combined chart
+    fig = plt.figure()
+    x = range(1, NSTATES + 1)
+    plt.plot(x, ACTUAL_VALUES, label='Actual')
+    for e in range(len(example_episodes)):
+        plt.plot(x, example_ep_vals[e], label=example_episodes[e])
+    plt.xticks(x, ['A', 'B', 'C', 'D', 'E'])
+    plt.title('State value estimates')
+    plt.xlim((1, NSTATES))
+    plt.ylim((0, 1))
+    plt.legend(loc=2)
+    fig.savefig(os.path.join(RUN_ID, 'combined.png'))
+    plt.close()
 
 
-def plot_val_estimates(file_counter, episode, alpha):
+def plot_val_estimates(episode, alpha):
     fig = plt.figure()
     x = range(1, NSTATES + 1)
     plt.plot(x, [s.v for s in states][1:NSTATES + 1], label='Estimated')
-    plt.plot(x, ACTUAL_VALUES, label='Optimal')
+    plt.plot(x, ACTUAL_VALUES, label='Actual')
     plt.xticks(x, ['A', 'B', 'C', 'D', 'E'])
     plt.title('State value estimates')
     plt.xlim((1, NSTATES))
@@ -111,7 +134,7 @@ def plot_val_estimates(file_counter, episode, alpha):
     plt.text(4.2, 0.14, 'T = {}'.format(episode))
     plt.text(4.2, 0.10, u'$\\alpha$ = {}'.format(round(alpha, 4)))
     plt.legend(loc=2)
-    fig.savefig(os.path.join('{}'.format(RUN_ID), '{}.png'.format(str(file_counter).zfill(4))))
+    fig.savefig(os.path.join('{}'.format(RUN_ID), '{}.png'.format(str(episode).zfill(4))))
     plt.close()
 
 
