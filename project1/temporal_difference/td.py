@@ -3,8 +3,9 @@ import string
 import numpy as np
 
 from project1.models.state import State
-from project1.plots import plot_val_estimates
-from project1.settings import MAX_ITERATIONS, WEIGHT_UPDATE_LOC, NSTATES, DEBUG
+from project1.settings import MAX_ITERATIONS, WEIGHT_UPDATE_LOC, NSTATES, DEBUG, SAVE_EX62, \
+    EX62_T_VALS
+from project1.utils import plot_val_estimates
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
@@ -79,6 +80,9 @@ def TD(lambda_val,
     converged = False
     iterator = 0
 
+    # Record state value estimates
+    sv_estimates = []
+
     # Repeatedly present same episodes in training set until convergence
     while not converged:
 
@@ -87,9 +91,9 @@ def TD(lambda_val,
 
         for T, sequence in enumerate(episodes):
 
-            # Update learning rate according to episode
-            # alpha = 1. / pow(T + 1, alpha_decay_rate)
-            alpha *= alpha_decay_rate
+            print 'T = {} ... a = {} ... sv = {}'.format(T, alpha, [round(states[i].v, 3) for i in range(1, len(states) - 1)])
+            if SAVE_EX62 and T in EX62_T_VALS:
+                sv_estimates.append([states[i].v for i in range(1, len(states) - 1)])
 
             # Execute iterative value updates
             for s in sequence:
@@ -100,7 +104,7 @@ def TD(lambda_val,
 
                 # Equation (1)
                 # State sequence indices = range(t=1...m)
-                for s in sequence:
+                for s in sequence[0:]:
                     state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
                     delta = alpha * s.e * state_error
 
@@ -108,27 +112,40 @@ def TD(lambda_val,
                     if WEIGHT_UPDATE_LOC == 'timestep':
                         s.v += delta
                     elif not s.terminal:
+                        # print '     updating dv of state {} by {}'.format(s.index - 1, delta)
                         delta_v[s.index - 1] += delta
                     s.e *= lambda_val * gamma
 
                 # Apply weight update after each EPISODE
                 if WEIGHT_UPDATE_LOC == 'episode':
+                    # print '    updating weights using dv = {}'.format(delta_v)
                     for i in range(len(delta_v)):
                         states[i + 1].v += delta_v[i]
                     delta_v = _reset_delta_v(NSTATES)
+
+            # Update learning rate according to episode
+            # alpha = 1. / (T + 1)
+            alpha *= alpha_decay_rate
+
+        iterator += 1
+
+        # # TODO REMOVE THIS TEST
+        # if SAVE_EX62:
+        #     plot_val_estimates(T, sv_estimates, T, alpha)
+        # exit(9)
 
         # Apply weight update after each presentation of TRAINING SET
         if WEIGHT_UPDATE_LOC == 'trainset':
             for i in range(len(delta_v)):
                 states[i + 1].v += delta_v[i]
-            # FIXME WTF IS GOING ON WITH THESE GIANT DELTAS?!?1
-            # print '     ', [s.v for s in states]
-            # delta_v = _reset_delta_v(NSTATES)
+            delta_v = _reset_delta_v(NSTATES)
+
+            if SAVE_EX62:
+                plot_val_estimates(iterator, [states[i].v for i in range(1, len(states) - 1)], iterator, alpha)
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 
-        iterator += 1
-        # plot_val_estimates(iterator, [states[i].v for i in range(1, len(states) - 1)], iterator, alpha)
+        plot_val_estimates(T, sv_estimates, T, alpha)
 
         if iterator >= max_iter:
             if DEBUG:
@@ -139,7 +156,11 @@ def TD(lambda_val,
         # Check Euclidean distance of gradient descent for convergence
         dv = np.sqrt(np.sum([pow(dv, 2) for dv in delta_v]))
         if dv < epsilon:
-            print 'actually converged for real after {} iterations! -'.format(iterator), dv
+            print 'Converged after {} iterations (dv = {})'.format(iterator, dv)
             converged = True
 
-    return V if history else V[len(V) - 1]
+    # TODO Return error, not TD values
+    # return V if history else V[len(V) - 1]
+    td_vals = V[len(V) - 1]
+    # td_error = rmse(td_vals, ACTUAL_STATE_VALUES)
+    return td_vals
