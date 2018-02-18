@@ -21,28 +21,6 @@ def _reset_delta_v(nstates):
     return [0.0 for _ in range(nstates)]
 
 
-def _generate_episodes(nepisodes, states):
-    episodes = []
-
-    for i in range(nepisodes):
-        # Start in middle state C
-        # 0 <-- A <--> B <--> C <--> D <--> E --> 1
-        # 0     1      2      3      4      5     6
-        idx = 3
-        state_sequence = [states[idx]]
-
-        # Simulate episode
-        while True:
-            if state_sequence[len(state_sequence) - 1].terminal:
-                break
-            idx += 1 if np.random.choice(2) else -1
-            state_sequence.append(states[idx])
-
-        episodes.append(state_sequence)
-
-    return episodes
-
-
 def _step_weight(lambda_val, k):
     """
     The weight applied to each k-step estimate to calculate total change to state value
@@ -71,20 +49,20 @@ def _step_estimate(state_seq, k):
 
 
 def TD(lambda_val,
+       episodes,
        alpha=0.3,
        alpha_decay_rate=0.98,
        gamma=1.0,
-       num_episodes=10,
        max_iter=MAX_ITERATIONS,
        epsilon=0.001,
        history=False):
     """
     Temporal difference learner
     :param lambda_val:
+    :param episodes:
     :param alpha:
     :param alpha_decay_rate:
     :param gamma:
-    :param num_episodes:
     :param max_iter:
     :param epsilon:
     :param history: if True, return 2D array of state values after each
@@ -97,9 +75,6 @@ def TD(lambda_val,
     # Shit was carrying over from one TD calculation the next!
     states = _reset_states()
     # print '     ', [s.v for s in states]
-
-    # Store episodes to repeatedly present
-    episodes = _generate_episodes(num_episodes, states)
 
     # Flag convergence
     converged = False
@@ -149,7 +124,7 @@ def TD(lambda_val,
                 states[i + 1].v += delta_v[i]
             # FIXME WTF IS GOING ON WITH THESE GIANT DELTAS?!?1
             # print '     ', [s.v for s in states]
-            delta_v = _reset_delta_v(NSTATES)
+            # delta_v = _reset_delta_v(NSTATES)
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 
@@ -163,7 +138,9 @@ def TD(lambda_val,
 
         # print delta_v
         # Check Euclidean distance of gradient descent for convergence
-        # print np.sqrt(np.mean([pow(dv, 2) for dv in delta_v]))
-        converged = np.sqrt(np.sum([pow(dv, 2) for dv in delta_v])) < epsilon
+        dv = np.sqrt(np.sum([pow(dv, 2) for dv in delta_v]))
+        if dv < epsilon:
+            print 'actually converged for real after {} iterations! -'.format(iterator), dv
+            converged = True
 
     return V if history else V[len(V) - 1]
