@@ -67,23 +67,23 @@ by the learning procedure after a single presentation of a training set.
 This measure was averaged over 100 training sets. The lambda = 1 data points
 represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
-lambda_vals = [0.0, 0.3, 0.8, 1.0]
+lambda_vals = np.linspace(0.0, 1.0, 21)
 alpha_vals = np.linspace(0, 0.6, 13)
-training_sets = [generate_episodes(NEPISODES, reset_states()) for _ in range(NSETS)]
-
-for i in training_sets:
-    print [s.name for s in i[5]]
+training_sets = [generate_episodes(NEPISODES, reset_states(), limit=i) for _ in range(NSETS)]
 
 # Collect TD values for a single training set using each alpha value
 errors = []
+best_alphas = []
 
 for ld in lambda_vals:
 
     # Collect TD values as nested array for multiple plots
     ld_errors = []
+    min_ld_error = 100
+    best_alpha = 0
 
     for a in alpha_vals:
-        # print u'TD({}) | alpha = {}...'.format(ld, a)
+        print u'TD({}) | alpha = {}...'.format(ld, a)
 
         # Record state value estimates for current lambda/alpha combination
         td_vals = []
@@ -91,12 +91,28 @@ for ld in lambda_vals:
         for training_set in training_sets:
             td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
 
-        ld_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+        new_error = rmse(td_vals, ACTUAL_STATE_VALUES)
+        ld_errors.append(new_error)
+        if new_error < min_ld_error:
+            min_ld_error = new_error
+            best_alpha = a
 
+    best_alphas.append(round(best_alpha, 2))
     errors.append(ld_errors)
 
-print errors
-plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$')
+plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$', legend=False, file_counter=i)
+
+# Uncomment below for fig4-animated GIF frames
+# fig = plt.figure()
+# for j in range(len(errors)):
+#     plt.plot(alpha_vals, errors[j], label=lambda_vals[j])
+# plt.xlim((-0.05, 0.65))
+# plt.ylim((0.05, 0.75))
+# plt.xlabel(u'$\\alpha$')
+# plt.ylabel('ERROR')
+# plt.text(0.4, 0.1, 'episode limit = {}'.format(i))
+# fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str((i - 4) / 2).zfill(4))))
+# plt.close()
 
 '''
 Figure 5
@@ -107,8 +123,28 @@ of a training set. The lambda value is given by the horizontal coordinate. The a
 value was selected from those shown in Figure 4 to yield the lowest error
 for that lambda value.
 '''
-
-# plot()
+# lambda_vals = [0., 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
+#                0.95, 1.]
+# best_alphas = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.15, 0.15, 0.15, 0.15, 0.1, 0.1, 0.05,
+#                0.05]
+#
+# assert (len(lambda_vals) == len(best_alphas))
+#
+# avg_errors = []
+#
+# for i in range(len(lambda_vals)):
+#
+#     td_vals = []
+#
+#     for training_set in training_sets:
+#         td_vals.append(TD(lambda_vals[i], alpha=best_alphas[i], max_iter=1, episodes=training_set))
+#
+#     # Capture RMSE
+#     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+#
+# print avg_errors
+#
+# plot(lambda_vals, avg_errors)
 
 '''
 Example 6.2 from Reinforcement Learning: An Introduction (Sutton & Barto, 1998), page 100.

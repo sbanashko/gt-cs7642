@@ -14,15 +14,19 @@ def plot(x, y, xlab=u'$\lambda$', ylab='ERROR'):
     plt.show()
 
 
-def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR'):
+def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR', legend=True, file_counter=0):
+    fig = plt.figure()
     for i in range(len(y)):
         plt.plot(x, y[i], label=ld_vals[i])
     plt.xlim((-0.05, 0.65))
     plt.ylim((0.05, 0.75))
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    plt.legend(loc=2)
-    plt.show()
+    if legend:
+        plt.legend(loc=2)
+    fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str(file_counter).zfill(4))))
+    # plt.show()
+    plt.close()
 
 
 def plot_val_estimates(file_counter, state_vals, episode, alpha):
