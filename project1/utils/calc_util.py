@@ -51,7 +51,10 @@ def rmse(est, actual):
     errors = np.subtract(est, actual)
 
     # Calculate RMSE across state predictions for each state
-    errors = np.sqrt(np.mean(pow(errors, 2), axis=1))
+    try:
+        errors = np.sqrt(np.mean(pow(errors, 2), axis=1))
+    except IndexError:
+        errors = np.sqrt(np.mean(pow(errors, 2)))
 
     # Average RMSEs across all training sets to return scalar TD error for each lambda
     return np.mean(errors)

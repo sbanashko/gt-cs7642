@@ -3,9 +3,8 @@ import string
 import numpy as np
 
 from project1.models.state import State
-from project1.settings import MAX_ITERATIONS, WEIGHT_UPDATE_LOC, NSTATES, DEBUG, SAVE_EX62, \
-    EX62_T_VALS
-from project1.utils import plot_val_estimates
+from project1.settings import *
+from project1.utils import plot_val_estimates, rmse
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
@@ -19,7 +18,7 @@ def _reset_states():
 
 
 def _reset_delta_v(nstates):
-    return [0.0 for _ in range(nstates)]
+    return np.zeros(nstates)
 
 
 def _step_weight(lambda_val, k):
@@ -83,45 +82,55 @@ def TD(lambda_val,
     # Record state value estimates
     sv_estimates = []
 
+    delta_v = _reset_delta_v(NSTATES)
+
     # Repeatedly present same episodes in training set until convergence
     while not converged:
-
-        # Reset and store deltas of value/weight vector
-        delta_v = _reset_delta_v(NSTATES)
+        if WEIGHT_UPDATE_LOC == 'trainset':
+            delta_v = _reset_delta_v(NSTATES)
 
         for T, sequence in enumerate(episodes):
 
-            print 'T = {} ... a = {} ... sv = {}'.format(T, alpha, [round(states[i].v, 3) for i in range(1, len(states) - 1)])
-            if SAVE_EX62 and T in EX62_T_VALS:
+            if SAVE_EX62 and T in EX62_T_VALS and len(sv_estimates) == 0:
                 sv_estimates.append([states[i].v for i in range(1, len(states) - 1)])
 
             # Execute iterative value updates
-            for s in sequence:
+            for s in states:
                 s.e = 0
 
-            for t in range(1, len(sequence)):
-                sequence[t - 1].e += 1
+            # Reset and store deltas of value/weight vector
+            if WEIGHT_UPDATE_LOC == 'episode':
+                delta_v = _reset_delta_v(NSTATES)
 
-                # Equation (1)
-                # State sequence indices = range(t=1...m)
-                for s in sequence:
-                    state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
+            for t in range(1, len(sequence)):
+                current_state = states[sequence[t].index]
+                prev_state = states[sequence[t - 1].index]
+
+                prev_state.e += 1
+
+                if WEIGHT_UPDATE_LOC == 'timestep':
+                    delta_v = _reset_delta_v(NSTATES)
+
+                state_error = current_state.r + gamma * current_state.v - prev_state.v
+
+                # Apply update to all states wrt eligibility
+                for s in states:
                     delta = alpha * s.e * state_error
 
                     # Apply weight update after each TIMESTEP
                     if WEIGHT_UPDATE_LOC == 'timestep':
                         s.v += delta
                     elif not s.terminal:
-                        # print '     updating dv of state {} by {}'.format(s.index - 1, delta)
                         delta_v[s.index - 1] += delta
                     s.e *= lambda_val * gamma
 
-                # Apply weight update after each EPISODE
-                if WEIGHT_UPDATE_LOC == 'episode':
-                    # print '    updating weights using dv = {}'.format(delta_v)
-                    for i in range(len(delta_v)):
-                        states[i + 1].v += delta_v[i]
-                    delta_v = _reset_delta_v(NSTATES)
+            # Apply weight update after each EPISODE
+            if WEIGHT_UPDATE_LOC == 'episode':
+                for i in range(len(delta_v)):
+                    states[i + 1].v += delta_v[i]
+
+            if SAVE_EX62 and T in EX62_T_VALS and len(sv_estimates) < len(EX62_T_VALS):
+                sv_estimates.append([states[i].v for i in range(1, len(states) - 1)])
 
             # Update learning rate according to episode
             # alpha = 1. / (T + 1)
@@ -129,38 +138,28 @@ def TD(lambda_val,
 
         iterator += 1
 
-        # # TODO REMOVE THIS TEST
-        # if SAVE_EX62:
-        #     plot_val_estimates(T, sv_estimates, T, alpha)
-        # exit(9)
-
         # Apply weight update after each presentation of TRAINING SET
         if WEIGHT_UPDATE_LOC == 'trainset':
             for i in range(len(delta_v)):
                 states[i + 1].v += delta_v[i]
-            delta_v = _reset_delta_v(NSTATES)
-
-            if SAVE_EX62:
-                plot_val_estimates(iterator, [states[i].v for i in range(1, len(states) - 1)], iterator, alpha)
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 
-        plot_val_estimates(T, sv_estimates, T, alpha)
+        # plot_val_estimates(T, sv_estimates, T, alpha)
 
         if iterator >= max_iter:
             if DEBUG:
-                print 'Max iterations reached, faking convergence'
+                print 'Max iterations reached'
             break
 
-        # print delta_v
         # Check Euclidean distance of gradient descent for convergence
         dv = np.sqrt(np.sum([pow(dv, 2) for dv in delta_v]))
+        # dv = rmse([s.v for s in states[1:len(states)-1]], ACTUAL_STATE_VALUES)
+
         if dv < epsilon:
-            print 'Converged after {} iterations (dv = {})'.format(iterator, dv)
             converged = True
 
-    # TODO Return error, not TD values
-    # return V if history else V[len(V) - 1]
-    td_vals = V[len(V) - 1]
-    # td_error = rmse(td_vals, ACTUAL_STATE_VALUES)
-    return td_vals
+    if SAVE_EX62:
+        plot_val_estimates(0, sv_estimates)
+    # print V[len(V) - 1]
+    return V if history else V[len(V) - 1]

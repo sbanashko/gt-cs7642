@@ -51,7 +51,11 @@ def _generate_episodes(nepisodes):
     return episodes
 
 
-def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=101):
+def TD(lambda_val,
+       alpha=0.1,
+       alpha_decay_rate=0.999,
+       gamma=1.0,
+       num_episodes=100):
     """
     Temporal difference learner
     :param lambda_val:
@@ -114,7 +118,7 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=101
             example_ep_vals.append([s.v for s in states][1:NSTATES + 1])
 
         # Update learning rate according to episode
-        # alpha *= alpha_decay_rate
+        alpha *= alpha_decay_rate
 
     # Plot combined chart
     fig = plt.figure()
@@ -124,8 +128,8 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=101
         plt.plot(x, example_ep_vals[e], label=example_episodes[e])
     plt.xticks(x, ['A', 'B', 'C', 'D', 'E'])
     plt.title('State value estimates')
-    plt.xlim((1, NSTATES))
-    plt.ylim((0, 1))
+    plt.xlim((0.5, NSTATES + 0.25))
+    plt.ylim((0, 0.85))
     plt.legend(loc=2)
     fig.savefig(os.path.join(RUN_ID, 'combined.png'))
     plt.close()
@@ -138,8 +142,8 @@ def plot_val_estimates(episode, alpha):
     plt.plot(x, ACTUAL_VALUES, label='Actual')
     plt.xticks(x, ['A', 'B', 'C', 'D', 'E'])
     plt.title('State value estimates')
-    plt.xlim((1, NSTATES))
-    plt.ylim((0, 1))
+    plt.xlim((0.5, NSTATES + 0.25))
+    plt.ylim((0, 0.85))
     plt.text(4.2, 0.14, 'T = {}'.format(episode))
     plt.text(4.2, 0.10, u'$\\alpha$ = {}'.format(round(alpha, 4)))
     plt.legend(loc=2)

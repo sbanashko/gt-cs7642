@@ -9,6 +9,7 @@ from project1.settings import *
 from project1.temporal_difference.td import TD
 from project1.utils import *
 
+
 '''
 Figure 3
 Average error on the random-walk problem under repeated presentations.
@@ -26,8 +27,7 @@ significant.
 training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
 
 # Lambda values to test
-# lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
-lambda_vals = [0.0]
+lambda_vals = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
 
 # Record RMSE of converged TD for each lambda value
 avg_errors = []
@@ -44,12 +44,13 @@ for lambda_val in lambda_vals:
     for training_set in training_sets:
 
         # Capture converged TD state value estimates
-        td_val = TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, episodes=training_set, epsilon=5e-4)
+        td_val = TD(lambda_val, alpha=0.21, alpha_decay_rate=0.9, episodes=training_set, epsilon=1e-3)
         td_vals.append(td_val)
 
     # Capture RMSE
     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
 
+print avg_errors
 plot(lambda_vals, avg_errors)
 
 '''
@@ -63,43 +64,41 @@ represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
 
 
-def fig4():
-    global lambda_vals, alpha_vals, _, training_sets, errors, best_alphas, td_vals, training_set
-    lambda_vals = np.linspace(0.0, 1.0, 21)
-    alpha_vals = np.arange(0, 0.6, 0.01)
-    training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
+# lambda_vals = np.linspace(0.0, 1.0, 21)
+# alpha_vals = np.arange(0, 0.6, 0.01)
+# training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
+#
+# # Collect TD values for a single training set using each alpha value
+# errors = []
+# best_alphas = []
+#
+# for ld in lambda_vals:
+#
+#     # Collect TD values as nested array for multiple plots
+#     ld_errors = []
+#     min_ld_error = 100
+#     best_alpha = 0
+#
+#     for a in alpha_vals:
+#
+#         # Record state value estimates for current lambda/alpha combination
+#         td_vals = []
+#
+#         for training_set in training_sets:
+#             td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
+#
+#         new_error = rmse(td_vals, ACTUAL_STATE_VALUES)
+#         ld_errors.append(new_error)
+#         if new_error < min_ld_error:
+#             min_ld_error = new_error
+#             best_alpha = a
+#
+#     best_alphas.append(round(best_alpha, 2))
+#     errors.append(ld_errors)
+#
+# plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$', legend=False)
 
-    # Collect TD values for a single training set using each alpha value
-    errors = []
-    best_alphas = []
-
-    for ld in lambda_vals:
-
-        # Collect TD values as nested array for multiple plots
-        ld_errors = []
-        min_ld_error = 100
-        best_alpha = 0
-
-        for a in alpha_vals:
-
-            # Record state value estimates for current lambda/alpha combination
-            td_vals = []
-
-            for training_set in training_sets:
-                td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
-
-            new_error = rmse(td_vals, ACTUAL_STATE_VALUES)
-            ld_errors.append(new_error)
-            if new_error < min_ld_error:
-                min_ld_error = new_error
-                best_alpha = a
-
-        best_alphas.append(round(best_alpha, 2))
-        errors.append(ld_errors)
-
-    plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$', legend=False)
-
-    # fig4_animation()
+# fig4_animation()
 
 
 '''
