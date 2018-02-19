@@ -4,7 +4,7 @@ import numpy as np
 
 from project1.models.state import State
 from project1.settings import *
-from project1.utils import plot_val_estimates, rmse
+from project1.utils import plot_val_estimates
 
 max_lookahead = 100  # maximum_lookahead
 tol = 1e-3
