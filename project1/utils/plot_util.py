@@ -3,7 +3,6 @@
 import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 from project1.settings import NSTATES, ACTUAL_STATE_VALUES, OUTPUT_DIR, EX62_T_VALS
 
@@ -26,7 +25,7 @@ def plot(x, y, xlab=u'$\lambda$', ylab='ERROR'):
 
 
 def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR', legend=True, file_counter=0):
-    fig = plt.figure()
+    # fig = plt.figure()
     for i in range(len(y)):
         plt.plot(x, y[i], label=ld_vals[i])
     plt.xlim((-0.05, 0.65))
@@ -35,8 +34,9 @@ def plot_alpha(x, y, ld_vals, xlab=u'$\\alpha$', ylab='ERROR', legend=True, file
     plt.ylabel(ylab)
     if legend:
         plt.legend(loc=2)
-    fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str(file_counter).zfill(4))))
-    plt.close()
+    # fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str(file_counter).zfill(4))))
+    # plt.close()
+    plt.show()
 
 
 def plot_val_estimates(file_counter, state_vals, episode=None, alpha=None):
@@ -70,8 +70,8 @@ def fig4_animation(lambda_vals, alpha_vals, errors):
     plt.ylim((0.05, 0.75))
     plt.xlabel(u'$\\alpha$')
     plt.ylabel('ERROR')
-    # plt.text(0.4, 0.1, 'episode limit = {}'.format(i))
-    # fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str((i - 4) / 2).zfill(4))))
+    plt.text(0.4, 0.1, 'episode limit = {}'.format(i))
+    fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str((i - 4) / 2).zfill(4))))
     plt.close()
 
 

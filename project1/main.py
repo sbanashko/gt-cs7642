@@ -23,6 +23,7 @@ data point, the standard error is approximately cr = 0.01, so the differences
 between the Widrow-Hoff procedure and the other procedures are highly
 significant.
 '''
+print '*** Figure 3 ***'
 # Store episodes to repeatedly present
 training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
 
@@ -35,7 +36,8 @@ avg_errors = []
 # Compute RMSE for 1 lambda value at a time
 for lambda_val in lambda_vals:
 
-    print 'Running TD({})...'.format(lambda_val)
+    if DEBUG:
+        print 'Running TD({})...'.format(lambda_val)
 
     # Record converged state value estimates for current lambda
     td_vals = []
@@ -50,7 +52,8 @@ for lambda_val in lambda_vals:
     # Capture RMSE
     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
 
-print avg_errors
+if DEBUG:
+    print avg_errors
 plot(lambda_vals, avg_errors)
 
 '''
@@ -62,43 +65,42 @@ by the learning procedure after a single presentation of a training set.
 This measure was averaged over 100 training sets. The lambda = 1 data points
 represent performances of the Widrow-Hoff supervised-learning procedure.
 '''
+print '*** Figure 4 ***'
+lambda_vals = np.linspace(0.0, 1.0, 21)
+alpha_vals = np.arange(0, 0.6, 0.01)
+training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
 
+# Collect TD values for a single training set using each alpha value
+avg_errors = []
+best_alphas = []
 
-# lambda_vals = np.linspace(0.0, 1.0, 21)
-# alpha_vals = np.arange(0, 0.6, 0.01)
-# training_sets = [generate_episodes(NEPISODES, reset_states(), limit=6) for _ in range(NSETS)]
-#
-# # Collect TD values for a single training set using each alpha value
-# errors = []
-# best_alphas = []
-#
-# for ld in lambda_vals:
-#
-#     # Collect TD values as nested array for multiple plots
-#     ld_errors = []
-#     min_ld_error = 100
-#     best_alpha = 0
-#
-#     for a in alpha_vals:
-#
-#         # Record state value estimates for current lambda/alpha combination
-#         td_vals = []
-#
-#         for training_set in training_sets:
-#             td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
-#
-#         new_error = rmse(td_vals, ACTUAL_STATE_VALUES)
-#         ld_errors.append(new_error)
-#         if new_error < min_ld_error:
-#             min_ld_error = new_error
-#             best_alpha = a
-#
-#     best_alphas.append(round(best_alpha, 2))
-#     errors.append(ld_errors)
-#
-# plot_alpha(alpha_vals, errors, lambda_vals, xlab=u'$\\alpha$', legend=False)
+for ld in lambda_vals:
 
-# fig4_animation()
+    # Collect TD values as nested array for multiple plots
+    ld_errors = []
+    min_ld_error = 100
+    best_alpha = 0
+
+    for a in alpha_vals:
+
+        # Record state value estimates for current lambda/alpha combination
+        td_vals = []
+
+        for training_set in training_sets:
+            td_vals.append(TD(ld, alpha=a, max_iter=1, episodes=training_set))
+
+        new_error = rmse(td_vals, ACTUAL_STATE_VALUES)
+        ld_errors.append(new_error)
+        if new_error < min_ld_error:
+            min_ld_error = new_error
+            best_alpha = a
+
+    best_alphas.append(round(best_alpha, 2))
+    avg_errors.append(ld_errors)
+
+if DEBUG:
+    print avg_errors
+plot_alpha(alpha_vals, avg_errors, lambda_vals, xlab=u'$\\alpha$', legend=False)
 
 
 '''
@@ -110,37 +112,33 @@ of a training set. The lambda value is given by the horizontal coordinate. The a
 value was selected from those shown in Figure 4 to yield the lowest error
 for that lambda value.
 '''
-# # Cache fig4 calculations of best alphas (Frakes)
+# Cache fig4 calculations of best alphas (Frakes)
 # best_alphas = np.array([0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
 #                         0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
 #                         0.2, 0.15, 0.15, 0.15, 0.15, 0.1,
 #                         0.1, 0.1, 0.05])
-#
-# # Copy of best alphas (Sutton)
-# # best_alphas = [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
-# #                0.2, 0.2, 0.2, 0.2, 0.2, 0.15, 0.15, 0.15,
-# #                0.15, 0.1, 0.1, 0.1, 0.05]
-#
-# assert (len(lambda_vals) == len(best_alphas))
-#
-# avg_errors = []
-#
-# for i in range(len(lambda_vals)):
-#
-#     td_vals = []
-#
-#     for training_set in training_sets:
-#         td_vals.append(TD(lambda_vals[i], alpha=best_alphas[i], max_iter=1, episodes=training_set))
-#
-#     # Capture RMSE
-#     avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
-#
-# print avg_errors
-#
-# plot(lambda_vals, avg_errors)
 
-'''
-Example 6.2 from Reinforcement Learning: An Introduction (Sutton & Barto, 1998), page 100.
-'''
-# plot_value_updates()
-# plot_td_mc_comparison()
+# Copy of best alphas (Sutton)
+# best_alphas = [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
+#                0.2, 0.2, 0.2, 0.2, 0.2, 0.15, 0.15, 0.15,
+#                0.15, 0.1, 0.1, 0.1, 0.05]
+print '*** Figure 5 ***'
+
+assert (len(lambda_vals) == len(best_alphas))
+
+avg_errors = []
+
+for i in range(len(lambda_vals)):
+
+    td_vals = []
+
+    for training_set in training_sets:
+        td_vals.append(TD(lambda_vals[i], alpha=best_alphas[i], max_iter=1, episodes=training_set))
+
+    # Capture RMSE
+    avg_errors.append(rmse(td_vals, ACTUAL_STATE_VALUES))
+
+if DEBUG:
+    print avg_errors
+
+plot(lambda_vals, avg_errors)
