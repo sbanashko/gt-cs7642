@@ -62,7 +62,7 @@ def plot_val_estimates(file_counter, state_vals, episode=None, alpha=None):
     plt.close()
 
 
-def fig4_animation(lambda_vals, alpha_vals, errors):
+def fig4_frame(lambda_vals, alpha_vals, errors, i):
     fig = plt.figure()
     for j in range(len(errors)):
         plt.plot(alpha_vals, errors[j], label=lambda_vals[j])
@@ -71,13 +71,5 @@ def fig4_animation(lambda_vals, alpha_vals, errors):
     plt.xlabel(u'$\\alpha$')
     plt.ylabel('ERROR')
     plt.text(0.4, 0.1, 'episode limit = {}'.format(i))
-    fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str((i - 4) / 2).zfill(4))))
+    fig.savefig(os.path.join('output', OUTPUT_DIR, '{}.png'.format(str((i / 4) - 1).zfill(4))))
     plt.close()
-
-
-def plot_value_updates():
-    pass
-
-
-def plot_td_mc_comparison():
-    pass
