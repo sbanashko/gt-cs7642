@@ -1,0 +1,25 @@
+---
+
+- apt: update_cache=yes
+
+- name: prereqs
+  apt: name={{ item }}
+  with_items:
+    - python-software-properties
+    - python-dev
+    - python-virtualenv
+    - python-pip
+    - pkg-config
+    - git
+    - unzip
+    - graphviz
+    - libgraphviz-dev
+    - pkb-config
+
+- pip:
+    name: numpy
+    name: pydot
+    name: networkx
+    name: progressbar2
+    name: pygraphviz
+    name: pymdptoolbox
