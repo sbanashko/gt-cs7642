@@ -104,31 +104,31 @@ plot_alpha(alpha_vals, avg_errors, lambda_vals, xlab=u'$\\alpha$', legend=False)
 
 
 '''Figure 4 experiment with more continuous lambda and alpha values'''
-for i in range(4, 21, 4):
-
-    if DEBUG:
-        print i
-
-    # Generate new set of episodes limiting episode length to i
-    tempsets = [generate_episodes(NEPISODES, reset_states(), limit=i) for _ in range(NSETS)]
-
-    # Collect TD values as nested array for multiple plots
-    temperrors = np.empty((0, 61))
-
-    for ld in np.linspace(0.0, 1.0, 21):
-
-        templderrors = []
-
-        for a in np.linspace(0, 0.6, 61):
-            tdv = []
-            for tset in tempsets:
-                tdv.append(TD(ld, alpha=a, max_iter=1, episodes=tset))
-
-            templderrors.append(rmse(tdv, ACTUAL_STATE_VALUES))
-
-        temperrors = np.vstack([temperrors, templderrors])
-
-    fig4_frame(np.linspace(0.0, 1.0, 21), np.linspace(0, 0.6, 61), temperrors, i)
+# for i in range(4, 21, 4):
+#
+#     if DEBUG:
+#         print i
+#
+#     # Generate new set of episodes limiting episode length to i
+#     tempsets = [generate_episodes(NEPISODES, reset_states(), limit=i) for _ in range(NSETS)]
+#
+#     # Collect TD values as nested array for multiple plots
+#     temperrors = np.empty((0, 61))
+#
+#     for ld in np.linspace(0.0, 1.0, 21):
+#
+#         templderrors = []
+#
+#         for a in np.linspace(0, 0.6, 61):
+#             tdv = []
+#             for tset in tempsets:
+#                 tdv.append(TD(ld, alpha=a, max_iter=1, episodes=tset))
+#
+#             templderrors.append(rmse(tdv, ACTUAL_STATE_VALUES))
+#
+#         temperrors = np.vstack([temperrors, templderrors])
+#
+#     fig4_frame(np.linspace(0.0, 1.0, 21), np.linspace(0, 0.6, 61), temperrors, i)
 
 
 '''
