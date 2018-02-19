@@ -89,14 +89,23 @@ def TD(lambda_val, alpha=0.1, alpha_decay_rate=0.98, gamma=1.0, num_episodes=101
         for s in sequence:
             s.e = 0
 
+        # Store value changes to apply after complete episode
+        delta_v = np.zeros(len(states) - 2) # don't care about nonterminal states
+
         for t in range(1, len(sequence)):
             sequence[t - 1].e += 1
 
             for s in sequence:
                 state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
                 delta = alpha * s.e * state_error
-                s.v += delta
+                # s.v += delta
+                if not s.terminal:
+                    delta_v[s.index - 1] += delta
                 s.e *= lambda_val * gamma
+
+        # Update values after episode
+        for i, dv in enumerate(delta_v):
+            states[i + 1].v += dv
 
         V = np.vstack([V, [states[i].v for i in range(1, len(states) - 1)]])  # don't care about terminal states
 

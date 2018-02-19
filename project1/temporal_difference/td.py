@@ -104,7 +104,7 @@ def TD(lambda_val,
 
                 # Equation (1)
                 # State sequence indices = range(t=1...m)
-                for s in sequence[0:]:
+                for s in sequence:
                     state_error = sequence[t].r + gamma * sequence[t].v - sequence[t - 1].v
                     delta = alpha * s.e * state_error
 
