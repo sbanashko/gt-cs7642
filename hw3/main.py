@@ -1,29 +1,9 @@
-import numpy as np
-
+from problems import get_sample_problem
 from util import mdp_to_json
 
 mdp = {}
 
-# hw3_tester example as mdptoolbox setup
-T = np.array([[
-    [0, 0.5, 0.5],
-    [0, 1, 0],
-    [0.9, 0, 0.1]
-], [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 1, 0]
-]])
-
-R = np.array([[
-    [0, 0, 1],
-    [0, 0, 0],
-    [0, 0, 0]
-], [
-    [1, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0]
-]])
+T, R = get_sample_problem()
 
 na = len(T)
 ns = len(T[0])
