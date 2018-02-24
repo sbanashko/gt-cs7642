@@ -5,10 +5,11 @@ mdp = {}
 
 T, R = get_sample_problem()
 
-na = len(T)
-ns = len(T[0])
+assert(T.shape[1] == T.shape[2]), 'Transition matrix does not have square action ndarray'
+assert(R.shape[1] == R.shape[2]), 'Reward matrix does not have square action ndarray'
 
-print ns, 'states and', na, 'actions'
+na = T.shape[0]
+ns = T.shape[1]
 
 states = []
 
