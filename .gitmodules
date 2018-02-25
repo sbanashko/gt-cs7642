@@ -1,0 +1,3 @@
+[submodule "hw3/hw3-tester"]
+	path = hw3/hw3-tester
+	url = https://github.com/rldm/hw3-tester.git
