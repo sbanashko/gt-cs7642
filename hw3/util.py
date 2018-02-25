@@ -41,16 +41,24 @@ def construct_TR(ns):
     R1 = np.zeros((ns, ns))
     R2 = np.zeros((ns, ns))
 
-    R1[ns - 3, ns - 1] = -1
-    R2[ns - 3, ns - 1] = -1
+    R1[ns - 3, ns - 1] = -100
+    R2[ns - 3, ns - 1] = -100
 
     R = np.array([R1, R2])
+
+    # TESTING
+    # for a in range(2):
+    #     for s in np.arange(1, ns - 3, 2):
+    #         R[a, s, s + 3] = 0
+
+    # print(T)
+    # print('*' * 80)
+    # print(R)
 
     return T, R
 
 
 def construct_mdp_obj(T, R):
-
     mdp = {}
     states = []
 

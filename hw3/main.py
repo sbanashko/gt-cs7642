@@ -1,6 +1,5 @@
 from hw3.util import *
 
-
 SAVE_JSON = True
 
 T, R = construct_TR(30)
