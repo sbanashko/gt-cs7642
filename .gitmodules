@@ -1,3 +1,6 @@
 [submodule "hw3/hw3-tester"]
 	path = hw3/hw3-tester
 	url = https://github.com/rldm/hw3-tester.git
+[submodule "hw4/openai/gym"]
+	path = hw4/openai/gym
+	url = https://github.com/openai/gym.git
