@@ -3,14 +3,15 @@ import argparse
 import gym
 import numpy as np
 from gym import wrappers, logger
-import matplotlib.pyplot as plt
+
+from util import *
 
 
 class QLearningAgent(object):
     """Q"""
 
-    def __init__(self, ns, na, alpha=0.2, alpha_decay_rate=0.99, random_action_rate=0.5, random_action_rate_decay=0.99,
-                 gamma=0.9):
+    def __init__(self, ns, na, alpha=0.2, random_action_rate=0.5,
+                 random_action_rate_decay=0.99, gamma=0.9):
         self.s = 0
         self.a = 0
         self.ns = ns
@@ -18,12 +19,22 @@ class QLearningAgent(object):
         # Initialize Q table (because it's a finite problem and we can)
         self.Q = np.random.random((ns, na))
         self.alpha = alpha
-        self.alpha_decay_rate = alpha_decay_rate
+        # self.alpha_decay_rate = alpha_decay_rate
         self.random_action_rate = random_action_rate
         self.random_action_rate_decay = random_action_rate_decay
         self.gamma = gamma
 
-    def act(self, s, a, sp, r):
+    def query_initial(self, s):
+        """
+        Select action without updating the Q-table
+        :param s:
+        :return:
+        """
+        if np.random.random() < self.alpha:
+            return np.random.choice(self.na)
+        return max(range(self.na), key=lambda x: self.Q[s, x])
+
+    def query(self, s, a, sp, r):
         """
         Select action and update Q-table
         :param s: previous state
@@ -32,7 +43,7 @@ class QLearningAgent(object):
         :param r: immediate reward
         :return:
         """
-        self.update_Q((s, a, sp, r))
+        delta_Q = self.update_Q((s, a, sp, r))
 
         # # TODO implement Dyna-Q
         # if self.dyna > 0:
@@ -57,18 +68,7 @@ class QLearningAgent(object):
         self.s = sp
         self.a = action
 
-        return action
-
-    def query_initial(self, s):
-        """
-        Select action without updating the Q-table
-        :param s:
-        :return:
-        """
-        if np.random.random() < self.alpha:
-            self.alpha *= self.alpha_decay_rate
-            return np.random.choice(self.na)
-        return max(range(self.na), key=lambda x: self.Q[s, x])
+        return action, delta_Q
 
     def update_Q(self, experience_tuple):
         """
@@ -77,8 +77,11 @@ class QLearningAgent(object):
         :return:
         """
         s, a, sp, r = experience_tuple
-        self.Q[s, a] = (1 - self.alpha) * self.Q[s, a] + self.alpha * (
+        prev_Q = self.Q[s, a]
+        updated_Q = (1 - self.alpha) * self.Q[s, a] + self.alpha * (
                 r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])])
+        self.Q[s, a] = updated_Q
+        return abs(updated_Q - prev_Q)
 
 
 if __name__ == '__main__':
@@ -106,11 +109,13 @@ if __name__ == '__main__':
     episode_count = 100
     max_iterations = 1000
 
+    all_Q_updates = []
     all_rewards = []
     done = False
 
     for e in range(episode_count):
 
+        total_Q_update = 0
         total_reward = 0
         episode_dir = 'episode_{}'.format(str(e).zfill(4))
 
@@ -122,7 +127,10 @@ if __name__ == '__main__':
             new_state, reward, done, details = env.step(action)
 
             # Select next action
-            action = agent.act(state, action, new_state, reward)
+            action, delta_Q = agent.query(state, action, new_state, reward)
+
+            # Add Q update value to tracker
+            total_Q_update += delta_Q
 
             if reward > 0:
                 print('Finished episode after {}'.format(i))
@@ -132,19 +140,17 @@ if __name__ == '__main__':
             # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
             # Video is not recorded every episode, see capped_cubic_video_schedule for details.
 
+            total_reward += reward
+            agent.s = new_state
+
             if done:
                 print('Done after {} iterations'.format(i + 1))
                 break
 
-            agent.update_Q((state, action, new_state, reward))
-            total_reward += reward
-            agent.s = new_state
-
+        all_Q_updates.append(total_Q_update)
         all_rewards.append(total_reward)
 
-    print(all_rewards)
-    plt.plot(all_rewards)
-    plt.show()
+    plot_results(all_Q_updates, all_rewards)
 
     # Close the env and write monitor result info to disk
     env.close()
