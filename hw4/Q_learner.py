@@ -5,7 +5,7 @@ class QLearningAgent(object):
     """Q"""
 
     def __init__(self, ns, na, alpha=0.2, random_action_rate=0.5,
-                 random_action_rate_decay=0.999, gamma=0.9, dyna=200):
+                 random_action_rate_decay=0.99, gamma=0.9, dyna=200):
         self.s = 0
         self.a = 0
         self.ns = ns
@@ -84,7 +84,7 @@ class QLearningAgent(object):
         """
         s, a, sp, r = experience_tuple
         prev_Q = self.Q[s, a]
-        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (
-                r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])])
+        updated_Q = prev_Q + self.alpha * (
+                r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])] - prev_Q)
         self.Q[s, a] = updated_Q
         return abs(updated_Q - prev_Q)

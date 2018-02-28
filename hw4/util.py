@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def get_problems(Q):
+def get_samples(Q):
     return [{
         'expected': -11.374402515,
         'actual': Q[462, 4]
@@ -50,7 +50,7 @@ def plot_results(Q_updates, rewards):
 
 
 def validate_results(Q):
-    problems = get_problems(Q)
+    problems = get_samples(Q)
     for i, p in enumerate(problems):
         result = '✔' if np.isclose(p['expected'], p['actual']) else 'X'
         print()
