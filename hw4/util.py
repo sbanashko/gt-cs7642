@@ -59,3 +59,22 @@ def validate_results(Q):
         print('Actual: {}'.format(p['actual']))
 
     print()
+
+
+def show_hw_answers(Q):
+    print()
+    print('*' * 80)
+    print('Homework Answers')
+    print('=' * 80)
+    print('Problem 1: ', Q[423, 0])
+    print('Problem 2: ', Q[178, 2])
+    print('Problem 3: ', Q[306, 2])
+    print('Problem 4: ', Q[487, 2])
+    print('Problem 5: ', Q[253, 5])
+    print('Problem 6: ', Q[194, 0])
+    print('Problem 7: ', Q[359, 1])
+    print('Problem 8: ', Q[474, 5])
+    print('Problem 9: ', Q[142, 2])
+    print('Problem 10: ', Q[448, 0])
+    print('*' * 80)
+    print()

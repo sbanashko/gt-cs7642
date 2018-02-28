@@ -93,6 +93,9 @@ plot_results(all_Q_updates, all_rewards)
 # Validate Q values against HW4 sheet
 validate_results(agent.Q)
 
+# Print Q values for HW4 problems
+show_hw_answers(agent.Q)
+
 plt.plot(all_rars)
 plt.title('Random action rates')
 plt.show()
