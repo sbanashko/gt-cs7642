@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def get_problems():
+def get_problems(Q):
     return [{
         'expected': -11.374402515,
         'actual': Q[462, 4]
@@ -45,11 +45,12 @@ def plot_results(Q_updates, rewards):
     ax2.tick_params('y')
 
     fig.tight_layout()
+    plt.title('Q Updates and Rewards')
     plt.show()
 
 
 def validate_results(Q):
-    problems = get_problems()
+    problems = get_problems(Q)
     for i, p in enumerate(problems):
         result = '✔' if np.isclose(p['expected'], p['actual']) else 'X'
         print()
