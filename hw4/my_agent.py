@@ -17,12 +17,15 @@ class QLearningAgent(object):
         self.ns = ns
         self.na = na
         # Initialize Q table (because it's a finite problem and we can)
-        self.Q = np.random.random((ns, na))
+        # self.Q = np.random.random((ns, na))
+        self.Q = np.random.uniform(-1.0, 1.0, (ns, na))
         self.alpha = alpha
         # self.alpha_decay_rate = alpha_decay_rate
         self.random_action_rate = random_action_rate
         self.random_action_rate_decay = random_action_rate_decay
         self.gamma = gamma
+        self.memory = []
+        self.dyna = 200
 
     def query_initial(self, s):
         """
@@ -30,9 +33,21 @@ class QLearningAgent(object):
         :param s:
         :return:
         """
-        if np.random.random() < self.alpha:
-            return np.random.choice(self.na)
-        return max(range(self.na), key=lambda x: self.Q[s, x])
+        # if np.random.random() < self.alpha:
+        #     return np.random.choice(self.na)
+        # return max(range(self.na), key=lambda x: self.Q[s, x])
+        if np.random.random() < self.random_action_rate:
+            action = np.random.choice(self.na)
+        else:
+            action = np.argmax([self.Q[self.s, a] for a in range(self.na)])
+
+        self.random_action_rate *= self.random_action_rate_decay
+
+        # Update current state and action
+        self.s = s
+        self.a = action
+
+        return action
 
     def query(self, s, a, sp, r):
         """
@@ -45,17 +60,17 @@ class QLearningAgent(object):
         """
         delta_Q = self.update_Q((s, a, sp, r))
 
-        # # TODO implement Dyna-Q
-        # if self.dyna > 0:
-        #
-        #     # Replace T and R models with in-memory historical data
-        #     self.memory.append((self.s, self.a, sp, r))
-        #
-        #     # Hallucinate
-        #     for d in range(self.dyna):
-        #
-        #         # Update Q-table
-        #         self.Q(self.memory[np.random.choice(len(self.memory))])
+        # Dyna-Q
+        if self.dyna > 0:
+
+            # Replace T and R models with in-memory historical data
+            self.memory.append((self.s, self.a, sp, r))
+
+            # Hallucinate
+            for d in range(self.dyna):
+
+                # Update Q-table
+                self.update_Q(self.memory[np.random.choice(len(self.memory))])
 
         if np.random.random() < self.random_action_rate:
             action = np.random.choice(self.na)
@@ -78,7 +93,7 @@ class QLearningAgent(object):
         """
         s, a, sp, r = experience_tuple
         prev_Q = self.Q[s, a]
-        updated_Q = (1 - self.alpha) * self.Q[s, a] + self.alpha * (
+        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (
                 r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])])
         self.Q[s, a] = updated_Q
         return abs(updated_Q - prev_Q)
@@ -109,8 +124,11 @@ if __name__ == '__main__':
     episode_count = 100
     max_iterations = 1000
 
+    # Various trackers
     all_Q_updates = []
     all_rewards = []
+    all_iters_per_episode = []
+
     done = False
 
     for e in range(episode_count):
@@ -122,9 +140,21 @@ if __name__ == '__main__':
         state = env.reset()
         action = agent.query_initial(state)  # set the state and get first action
 
-        for i in range(max_iterations):
+        collected_rar = []
+        i = 0
+
+        while True:
+
+            i += 1
+
+            collected_rar.append(agent.random_action_rate)
+
             # Execute step
             new_state, reward, done, details = env.step(action)
+
+            # TODO subroutine updates (see Diettrich Fig 2, p238)
+            # https://www.jair.org/media/639/live-639-1834-jair.pdf
+            taxirow, taxicol, passidx, destidx = env.unwrapped.decode(new_state)
 
             # Select next action
             action, delta_Q = agent.query(state, action, new_state, reward)
@@ -132,8 +162,11 @@ if __name__ == '__main__':
             # Add Q update value to tracker
             total_Q_update += delta_Q
 
-            if reward > 0:
-                print('Finished episode after {}'.format(i))
+            # if reward > 0:
+            #     print('Finished episode after {}'.format(i))
+            #     env.render()
+
+            if e == episode_count - 1:
                 env.render()
 
             # Note there's no env.render() here. But the environment still can open window and
@@ -144,13 +177,24 @@ if __name__ == '__main__':
             agent.s = new_state
 
             if done:
-                print('Done after {} iterations'.format(i + 1))
+                print('Done after {} iterations'.format(i))
+                # plt.plot(collected_rar)
+                # plt.show()
+                # exit(8)
                 break
 
         all_Q_updates.append(total_Q_update)
         all_rewards.append(total_reward)
+        all_iters_per_episode.append(i)
 
     plot_results(all_Q_updates, all_rewards)
+
+    # Validate Q values against HW4 sheet
+    validate_results(agent.Q)
+
+    plt.plot(all_iters_per_episode)
+    plt.show()
+    # exit(8)
 
     # Close the env and write monitor result info to disk
     env.close()
