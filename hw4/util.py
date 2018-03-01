@@ -5,22 +5,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def get_samples(Q):
+def get_samples():
     return [{
+        'lookup': (462, 4),
         'expected': -11.374402515,
-        'actual': Q[462, 4]
     }, {
+        'lookup': (398, 3),
         'expected': 4.348907,
-        'actual': Q[398, 3]
     }, {
+        'lookup': (253, 0),
         'expected': -0.5856821173,
-        'actual': Q[253, 0]
     }, {
+        'lookup': (377, 1),
         'expected': 9.683,
-        'actual': Q[377, 1]
     }, {
+        'lookup': (83, 5),
         'expected': -12.8232660372,
-        'actual': Q[83, 5]
     }]
 
 
@@ -50,13 +50,14 @@ def plot_results(Q_updates, rewards):
 
 
 def validate_results(Q):
-    problems = get_samples(Q)
+    problems = get_samples()
     for i, p in enumerate(problems):
-        result = '✔' if np.isclose(p['expected'], p['actual']) else 'X'
+        actual = Q[p['lookup']]
+        result = '✔' if np.isclose(p['expected'], actual) else 'X'
         print()
         print('{} Problem {}'.format(result, i))
         print('Expected: {}'.format(p['expected']))
-        print('Actual: {}'.format(p['actual']))
+        print('Actual: {}'.format(actual))
 
     print()
 

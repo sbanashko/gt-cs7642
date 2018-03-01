@@ -28,7 +28,7 @@ env = wrappers.Monitor(env, directory=outdir, force=True)
 env.seed(0)
 agent = QLearningAgent(env.unwrapped.nS, env.unwrapped.nA)
 
-episode_count = 1000
+episode_count = 200
 max_iterations = 1000
 
 # Various trackers
@@ -36,6 +36,13 @@ all_Q_updates = []
 all_rewards = []
 all_iters_per_episode = []
 all_rars = []
+
+sample1 = []
+sample2 = []
+sample3 = []
+sample4 = []
+sample5 = []
+
 
 done = False
 
@@ -79,6 +86,13 @@ for e in range(episode_count):
         total_reward += reward
         agent.s = new_state
 
+        # Update samples for graphing/debugging
+        sample1.append(agent.Q[462, 4])
+        sample2.append(agent.Q[398, 3])
+        sample3.append(agent.Q[253, 0])
+        sample4.append(agent.Q[377, 1])
+        sample5.append(agent.Q[83, 5])
+
         if done:
             print('Done after {} iterations'.format(i))
             break
@@ -95,6 +109,23 @@ validate_results(agent.Q)
 
 # Print Q values for HW4 problems
 show_hw_answers(agent.Q)
+
+# PLOT ALL THE THINGS
+samples = get_samples()
+sample_range = range(len(sample1))
+
+plt.plot(sample1, 'r-')
+plt.plot([samples[0]['expected'] for _ in sample_range], 'r--')
+plt.plot(sample2, 'm-')
+plt.plot([samples[1]['expected'] for _ in sample_range], 'm--')
+plt.plot(sample3, 'y-')
+plt.plot([samples[2]['expected'] for _ in sample_range], 'y--')
+plt.plot(sample4, 'g-')
+plt.plot([samples[3]['expected'] for _ in sample_range], 'g--')
+plt.plot(sample5, 'b-')
+plt.plot([samples[4]['expected'] for _ in sample_range], 'b--')
+plt.title('Sample Q Values')
+plt.show()
 
 plt.plot(all_rars)
 plt.title('Random action rates')

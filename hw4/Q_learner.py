@@ -5,7 +5,7 @@ class QLearningAgent(object):
     """Q"""
 
     def __init__(self, ns, na, alpha=0.2, random_action_rate=0.5,
-                 random_action_rate_decay=0.99, gamma=0.9, dyna=200):
+                 random_action_rate_decay=0.99, gamma=0.9, dyna=100):
         self.s = 0
         self.a = 0
         self.ns = ns
