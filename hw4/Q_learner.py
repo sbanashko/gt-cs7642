@@ -11,7 +11,8 @@ class QLearningAgent(object):
         self.ns = ns
         self.na = na
         # Initialize Q table (because it's a finite problem and we can)
-        self.Q = np.random.uniform(-1.0, 1.0, (ns, na))
+        # self.Q = np.random.uniform(-1.0, 1.0, (ns, na))
+        self.Q = np.zeros((ns, na))
         self.alpha = alpha
         self.random_action_rate = random_action_rate
         self.random_action_rate_decay = random_action_rate_decay
@@ -25,9 +26,6 @@ class QLearningAgent(object):
         :param s:
         :return:
         """
-        # if np.random.random() < self.alpha:
-        #     return np.random.choice(self.na)
-        # return max(range(self.na), key=lambda x: self.Q[s, x])
         if np.random.random() < self.random_action_rate:
             action = np.random.choice(self.na)
         else:

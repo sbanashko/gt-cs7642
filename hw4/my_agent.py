@@ -11,11 +11,9 @@ parser = argparse.ArgumentParser(description=None)
 parser.add_argument('env_id', nargs='?', default='Taxi-v2', help='Select the environment to run')
 args = parser.parse_args()
 
-save_results = False  # TODO put this in the argparser
-
 # You can set the level to logger.DEBUG or logger.WARN if you
 # want to change the amount of output.
-logger.set_level(logger.INFO)
+logger.set_level(logger.WARN)
 
 env = gym.make(args.env_id)
 
@@ -24,11 +22,11 @@ env = gym.make(args.env_id)
 # will be namespaced). You can also dump to a tempdir if you'd
 # like: tempfile.mkdtemp().
 outdir = 'output/tmp/q-agent-results'
-env = wrappers.Monitor(env, directory=outdir, force=True)
+# env = wrappers.Monitor(env, directory=outdir, force=True)
 env.seed(0)
 agent = QLearningAgent(env.unwrapped.nS, env.unwrapped.nA)
 
-episode_count = 200
+episode_count = 1000
 max_iterations = 1000
 
 # Various trackers
@@ -44,13 +42,11 @@ sample4 = []
 sample5 = []
 
 
-done = False
-
 for e in range(episode_count):
 
     total_Q_update = 0
     total_reward = 0
-    episode_dir = 'episode_{}'.format(str(e).zfill(4))
+    episode_dir = 'E{}'.format(str(e).zfill(4))
 
     state = env.reset()
     action = agent.query_initial(state)  # set the state and get first action
@@ -59,8 +55,6 @@ for e in range(episode_count):
 
     while True:
 
-        i += 1
-
         all_rars.append(agent.random_action_rate)
 
         # Execute step
@@ -68,23 +62,20 @@ for e in range(episode_count):
 
         # TODO subroutine updates (see Diettrich Fig 2, p238)
         # https://www.jair.org/media/639/live-639-1834-jair.pdf
-        taxirow, taxicol, passidx, destidx = env.unwrapped.decode(new_state)
+        # taxirow, taxicol, passidx, destidx = env.unwrapped.decode(new_state)
+
+        total_reward += reward
 
         # Select next action
-        action, delta_Q = agent.query(state, action, new_state, reward)
+        if reward != 20:
+            action, delta_Q = agent.query(state, action, new_state, reward)
 
-        # Add Q update value to tracker
-        total_Q_update += delta_Q
-
-        if e == episode_count - 1:
-            env.render()
+            # Add Q update value to tracker
+            total_Q_update += delta_Q
 
         # Note there's no env.render() here. But the environment still can open window and
         # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
         # Video is not recorded every episode, see capped_cubic_video_schedule for details.
-
-        total_reward += reward
-        agent.s = new_state
 
         # Update samples for graphing/debugging
         sample1.append(agent.Q[462, 4])
@@ -93,10 +84,14 @@ for e in range(episode_count):
         sample4.append(agent.Q[377, 1])
         sample5.append(agent.Q[83, 5])
 
-        if done:
-            print('Done after {} iterations'.format(i))
+        i += 1
+
+        if done or reward == 20:
+            # Manually set terminal state Q value as immediate reward and nothing else
+            agent.Q[agent.s, agent.a] = reward
             break
 
+    print('Episode {}: {} iterations'.format(e + 1, i + 1))
     all_Q_updates.append(total_Q_update)
     all_rewards.append(total_reward)
     all_iters_per_episode.append(i)
