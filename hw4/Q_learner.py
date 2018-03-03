@@ -4,16 +4,17 @@ import numpy as np
 class QLearningAgent(object):
     """Q"""
 
-    def __init__(self, ns, na, alpha=0.2, random_action_rate=0.5,
-                 random_action_rate_decay=0.99, gamma=0.9, dyna=100):
+    def __init__(self, ns, na, alpha=0.2, alpha_decay_rate=1.0,
+                 random_action_rate=0.5, random_action_rate_decay=0.99,
+                 gamma=0.9, dyna=200):
         self.s = 0
         self.a = 0
         self.ns = ns
         self.na = na
         # Initialize Q table (because it's a finite problem and we can)
-        # self.Q = np.random.uniform(-1.0, 1.0, (ns, na))
         self.Q = np.zeros((ns, na))
         self.alpha = alpha
+        self.alpha_decay_rate = alpha_decay_rate
         self.random_action_rate = random_action_rate
         self.random_action_rate_decay = random_action_rate_decay
         self.gamma = gamma
@@ -85,4 +86,5 @@ class QLearningAgent(object):
         updated_Q = prev_Q + self.alpha * (
                 r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])] - prev_Q)
         self.Q[s, a] = updated_Q
+        self.alpha *= self.alpha_decay_rate
         return abs(updated_Q - prev_Q)

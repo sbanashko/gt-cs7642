@@ -6,7 +6,6 @@ from gym import wrappers, logger
 from Q_learner import QLearningAgent
 from util import *
 
-
 parser = argparse.ArgumentParser(description=None)
 parser.add_argument('env_id', nargs='?', default='Taxi-v2', help='Select the environment to run')
 args = parser.parse_args()
@@ -22,7 +21,7 @@ env = gym.make(args.env_id)
 # will be namespaced). You can also dump to a tempdir if you'd
 # like: tempfile.mkdtemp().
 outdir = 'output/tmp/q-agent-results'
-# env = wrappers.Monitor(env, directory=outdir, force=True)
+env = wrappers.Monitor(env, directory=outdir, force=True)
 env.seed(0)
 agent = QLearningAgent(env.unwrapped.nS, env.unwrapped.nA)
 
@@ -40,7 +39,6 @@ sample2 = []
 sample3 = []
 sample4 = []
 sample5 = []
-
 
 for e in range(episode_count):
 
@@ -66,17 +64,6 @@ for e in range(episode_count):
 
         total_reward += reward
 
-        # Select next action
-        if reward != 20:
-            action, delta_Q = agent.query(state, action, new_state, reward)
-
-            # Add Q update value to tracker
-            total_Q_update += delta_Q
-
-        # Note there's no env.render() here. But the environment still can open window and
-        # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
-        # Video is not recorded every episode, see capped_cubic_video_schedule for details.
-
         # Update samples for graphing/debugging
         sample1.append(agent.Q[462, 4])
         sample2.append(agent.Q[398, 3])
@@ -84,18 +71,23 @@ for e in range(episode_count):
         sample4.append(agent.Q[377, 1])
         sample5.append(agent.Q[83, 5])
 
-        i += 1
-
+        # Quit loop and reset environment
         if done or reward == 20:
             # Manually set terminal state Q value as immediate reward and nothing else
             agent.Q[agent.s, agent.a] = reward
             break
 
-    print('Episode {}: {} iterations'.format(e + 1, i + 1))
+        # Select next action
+        else:
+            action, delta_Q = agent.query(state, action, new_state, reward)
+            # Add Q update value to tracker
+            total_Q_update += delta_Q
+            i += 1
+
+    logger.info('Episode {}: {} iterations'.format(e + 1, i + 1))
     all_Q_updates.append(total_Q_update)
     all_rewards.append(total_reward)
     all_iters_per_episode.append(i)
-
 
 plot_results(all_Q_updates, all_rewards)
 
