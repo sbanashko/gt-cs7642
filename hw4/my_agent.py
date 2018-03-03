@@ -84,7 +84,7 @@ for e in range(episode_count):
             total_Q_update += delta_Q
             i += 1
 
-    logger.info('Episode {}: {} iterations'.format(e + 1, i + 1))
+    logger.warn('Episode {}: {} iterations'.format(e + 1, i + 1))
     all_Q_updates.append(total_Q_update)
     all_rewards.append(total_reward)
     all_iters_per_episode.append(i)
