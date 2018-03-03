@@ -1,7 +1,9 @@
 import numpy as np
 
+from learners.rl_agent import RLAgent
 
-class QLearningAgent(object):
+
+class QLearningAgent(RLAgent):
     """Q"""
 
     def __init__(self, ns, na, alpha=0.2, alpha_decay_rate=1.0,
@@ -20,6 +22,9 @@ class QLearningAgent(object):
         self.gamma = gamma
         self.memory = []
         self.dyna = dyna
+
+        # Prevent updating Q table
+        self.training_mode = True
 
     def query_initial(self, s):
         """
@@ -81,6 +86,8 @@ class QLearningAgent(object):
         :param experience_tuple: s, a, s', r
         :return:
         """
+        if not self.training_mode:
+            return 0
         s, a, sp, r = experience_tuple
         prev_Q = self.Q[s, a]
         updated_Q = prev_Q + self.alpha * (
