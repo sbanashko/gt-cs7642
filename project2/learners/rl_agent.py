@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 
 class RLAgent(ABC):
 
-    @abstractmethod
-    def query_initial(self, *args):
-        pass
+    def __init__(self):
+        self.solved = False
+        self.episodes = 0
 
     @abstractmethod
-    def query(self, *args):
+    def train(self, *args):
         pass
