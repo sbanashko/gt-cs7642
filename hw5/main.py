@@ -80,6 +80,11 @@ class KWIKFightDetector:
             if np.all(m[:-1] == patrons):
                 return int(m[-1])
 
+        # Check "possible instigators against 1s AND possible peacemakers against 0s"
+        if np.all([np.isin(x, patron_ids) for x in self.possible_instigators]):
+            if not np.any([np.isin(x, patron_ids) for x in self.possible_peacemakers]):
+                return FIGHT
+
         # No immediate information and insufficient historical data
         return UNKNOWN
 
@@ -87,26 +92,52 @@ class KWIKFightDetector:
         learned_instigator = False
         learned_peacemaker = False
 
+        patron_ids = np.asarray(np.where(patrons))[0]
+        absentee_ids = np.asarray(np.where(np.invert(patrons)))[0]
+
         if fight:
             # If fight occurred, we know instigator was present and
             # peacemaker is absent
-            self.possible_instigators = np.intersect1d(self.possible_instigators, np.where(patrons))
-            self.possible_peacemakers = np.intersect1d(self.possible_peacemakers, np.where(np.invert(patrons)))
+            self.possible_instigators = np.intersect1d(self.possible_instigators, patron_ids)
+            self.possible_peacemakers = np.intersect1d(self.possible_peacemakers, absentee_ids)
 
         else:
             # If no fight occurred, we know (instigator was not present) OR (instigator AND peacemaker are present)
-            if self.known_instigator is not False and self.known_instigator in np.where(patrons):
-                self.possible_peacemakers = np.intersect1d(self.possible_peacemakers, np.where(patrons))
+            if self.known_instigator is not False and self.known_instigator in patron_ids:
+                self.possible_peacemakers = np.intersect1d(self.possible_peacemakers, patron_ids)
+
+        # TODO see if we can deduce peacemaker or instigator
+        for m in self.memory:
+            manifest = m[:-1]
+            label = m[-1]
+            diff = np.logical_xor(manifest, patrons)
+            if sum(diff) == 1:
+                new_patron_index = np.asarray(np.where(diff)).flatten()
+                npi = new_patron_index[0]
+                if label - fight == 1:
+                    # If additional patron prevents fight, then peacemaker discovered
+                    if patrons[npi] == 1:
+                        self.possible_instigators = new_patron_index
+                    # If removal of patron prevents fight, then instigator discovered
+                    else:
+                        self.possible_peacemakers = new_patron_index
+                elif fight - label == 1:
+                    # If additional patron causes fight, then instigator discovered
+                    if patrons[npi] == 1:
+                        self.possible_instigators = new_patron_index
+                    # If removal of patron causes fight, then peacemaker discovered
+                    else:
+                        self.possible_peacemakers = new_patron_index
 
         # Save to memory
         record = np.append(patrons, fight)
         self.memory = np.vstack([self.memory, record])
 
         # Narrow down suspects to 1
-        if len(self.possible_instigators) == 1:
-            self.known_instigator = self.possible_instigators[0]
+        if self.known_instigator is False and len(self.possible_instigators) == 1:
             learned_instigator = True
-        if len(self.possible_peacemakers) == 1:
+            self.known_instigator = self.possible_instigators[0]
+        if self.known_peacemaker is False and len(self.possible_peacemakers) == 1:
             self.known_peacemaker = self.possible_peacemakers[0]
             learned_peacemaker = True
 
