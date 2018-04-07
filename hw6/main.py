@@ -1,5 +1,6 @@
 from cvxopt import matrix
 from cvxopt.modeling import dot, op, variable
+import numpy as np
 
 from hw6.problems import *
 
@@ -21,35 +22,34 @@ S = variable(1, 'S')
 V = variable(1, 'V')
 
 # Variable vector [R, P, S, V]
-# x = variable(4)
+x = variable(4)
 
-# Objective function
-# A = matrix(sample_problems[0])
+# minimize cTx == -V
+c = matrix([0., 0., 0., -1.])
+objective = dot(c, x)
 
-# c = None
-# G = matrix([[1, 0, -1, 1],
-#             [1, 1, 0, -1],
-#             [1, -1, 1, 0],
-#             [0, 1, 1, 1],
-#             [0, -1, -1, -1]])
+# Matrices
+Ainit = np.zeros((0, len(x)))
 
-# h = []
+# R = 0, P = 1, S = 2, V = V
+for row in sample_problems[0]:
+    Ainit = np.vstack([Ainit, [row[0], row[1], row[2], 1]])
 
-# Coefficients for each variable that sums to 1.0
-# A = matrix([[1], [1], [1]])
+# Other known constraints
+Ainit = np.vstack([Ainit, [1., 1., 1., 0.]])  # R + P + S <= 1
+# Ainit = np.vstack([Ainit, [-1., 0., 0., 0.]])  # -R <= 0
+# Ainit = np.vstack([Ainit, [0., -1., 0., 0.]])  # -P <= 0
+# Ainit = np.vstack([Ainit, [0., 0., -1., 0.]])  # -S <= 0
 
-# Not really sure what this means
-# b = matrix(1)
+A = matrix(Ainit)
+# b = matrix([0., 0., 0., 1., 0., 0., 0.])
+b = matrix([0., 0., 0., 1.])
 
-# Linear constraints
-c1 = (P - S >= V)
-c2 = (-R + S >= V)
-c3 = (R - P >= V)
-c4 = (R + P + S == 1)
-constraints = [c1, c2, c3, c4]
+# Linear constraints embedded in matrices
+ineq = (A*x <= b)
 
-problem = op(-V, constraints)
+problem = op(objective, ineq)
 problem.solve()
-# print(problem.objective.value())
-for var in problem.variables():
-    print('{} = {}'.format(var.name, var.value))
+
+# [R, P, S, V] ^ T
+print(ineq.multiplier.value)
