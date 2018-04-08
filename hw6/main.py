@@ -58,11 +58,11 @@ def solve(problem):
 if __name__ == '__main__':
     solvers.options['show_progress'] = False
 
-    for i, problem in enumerate(sample_problems):
+    for i, problem in enumerate(rldm_problems):
         print('Problem {}'.format(i + 1))
         solution = solve(problem)
         print([round(x, 5) for x in solution])
         # print('R={} P={} S={} V={}'.format(solution[0], solution[1], solution[2], solution[3]))
 
-        if i + 1 < len(sample_problems):
+        if i + 1 < len(rldm_problems):
             print()
