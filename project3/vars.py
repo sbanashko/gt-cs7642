@@ -1,6 +1,8 @@
 # Runtime
+DEBUG = True
 MAX_STEPS = 10e5
 MAX_GAME_LENGTH = 500
+CONTROL_STATE = 81
 
 # Agents
 PLAYER_INIT_X = 2

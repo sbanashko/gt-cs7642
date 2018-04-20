@@ -12,8 +12,7 @@ class QLearner(Player):
         self.ns = ns
         self.na = na
 
-        # S x A x O (assumes 2-player game and same number of actions
-        # available to each player)
+        # S x A (non-collaborative learner)
         self.Q = np.zeros((ns, na))
 
         self.alpha = alpha
@@ -23,6 +22,12 @@ class QLearner(Player):
         self.gamma = gamma
         self.memory = []
         self.dyna = dyna
+
+        # FFQ, CEQ are collaborative (take other agent actions into consideration)
+        self.collaborative = False
+
+        # For graphing, logging, etc
+        self.algo_name = 'Q-Learner'
 
         x, y, has_ball, name = player_info
         super(QLearner, self).__init__(x, y, has_ball, name)
@@ -35,10 +40,9 @@ class QLearner(Player):
         """
         if np.random.random() < self.random_action_rate:
             action = np.random.choice(self.na)
+            self.random_action_rate *= self.random_action_rate_decay
         else:
             action = np.argmax([self.Q[self.s, a] for a in range(self.na)])
-
-        self.random_action_rate *= self.random_action_rate_decay
 
         # Update current state and action
         self.s = s
@@ -97,6 +101,60 @@ class QLearner(Player):
 
 class FriendQLearner(QLearner):
 
+    def __init__(self, *args):
+        super(FriendQLearner, self).__init__(*args)
+
+        # S x A x O (assumes 2-player game and same number of actions
+        # available to each player)
+        self.Q = np.zeros((self.ns, self.na, self.na))
+
+        # self.random_action_rate = 0.0
+
+        self.collaborative = True
+        self.algo_name = 'Friend-Q'
+
+    def query_initial(self, s):
+        """
+        Select action without updating the Q-table
+        :param s:
+        :return:
+        """
+        if np.random.random() < self.random_action_rate:
+            action = np.random.choice(self.na)
+            self.random_action_rate *= self.random_action_rate_decay
+        else:
+            action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
+
+        # Update current state and action
+        self.s = s
+        self.a = action
+
+        return action
+
+    def query(self, s, a, o, sp, r):
+        """
+        Select action and update Q-table
+        :param s: previous state
+        :param a: selected action
+        :param o: opponent action
+        :param sp: new state
+        :param r: immediate reward
+        :return:
+        """
+        delta_Q = self.update_Q((s, a, o, sp, r))
+
+        if np.random.random() < self.random_action_rate:
+            action = np.random.choice(self.na)
+            self.random_action_rate *= self.random_action_rate_decay
+        else:
+            action, op_action = np.unravel_index(np.argmax([self.Q[sp]]), self.Q[s].shape)
+
+        # Update current state and action
+        self.s = sp
+        self.a = action
+
+        return action, delta_Q
+
     def update_Q(self, experience_tuple):
         """
         Friend Q update rule
@@ -104,16 +162,15 @@ class FriendQLearner(QLearner):
         :param experience_tuple:
         :return:
         """
-        s, a, a_opponent, sp, r, r_opponent = experience_tuple
-        prev_Q = self.Q[s, a, a_opponent]
+        s, a, o, sp, r = experience_tuple
+        prev_Q = self.Q[s, a, o]
 
-        # Calculate Nash_i(s, Q_a, Q_b)
+        # Calculate Nash_i(s, Q_1, Q_2)
         max_Qs = np.argmax(self.Q[s], axis=None)
-        a_index, a_opponent_index = np.unravel_index(max_Qs, self.Q[s].shape)
-        nash = max_Qs[s, a_index, a_opponent_index]
-        updated_Q = prev_Q + self.alpha * (r + self.gamma * nash - prev_Q)
+        a_ind, o_ind = np.unravel_index(max_Qs, self.Q[s].shape)
+        updated_Q = prev_Q + self.alpha * (r + self.gamma * self.Q[s, a_ind, o_ind] - prev_Q)
 
-        self.Q[s, a, a_opponent_index] = updated_Q
+        self.Q[s, a_ind, o_ind] = updated_Q
         self.alpha *= self.alpha_decay_rate
         return abs(updated_Q - prev_Q)
 
@@ -122,7 +179,15 @@ class FoeQLearner(QLearner):
     """
     Equivalently, minimax-Q
     """
-    pass
+    def __init__(self, *args):
+        super(FoeQLearner, self).__init__(*args)
+
+        # S x A x O (assumes 2-player game and same number of actions
+        # available to each player)
+        self.Q = np.zeros((self.ns, self.na, self.na))
+
+        self.collaborative = True
+        self.algo_name = 'Foe-Q'
 
 
 class CEQLearner(QLearner):
@@ -135,12 +200,21 @@ class CEQLearner(QLearner):
         # Initialize to equal probabilities == uniform random
         self.Ps = [1. / self.na for _ in range(self.na)]
 
-        # TODO other stuff
+        # S x A x O (assumes 2-player game and same number of actions
+        # available to each player)
+        self.Q = np.zeros((self.ns, self.na, self.na))
+
+        self.collaborative = True
+        self.algo_name = 'Correlated-Q'
 
     def query_initial(self, s):
+        # S x A x O (assumes 2-player game and same number of actions
+        # available to each player)
+        self.Q = np.zeros((self.ns, self.na))
+
         pass
 
-    def query(self, s, a, sp, r):
+    def query(self, s, a, o, sp, r):
         pass
 
 
@@ -148,6 +222,7 @@ class RandomAgent(Player):
     def __init__(self, player_info, na):
         self.player_info = player_info
         self.na = na
+        self.algo_name = 'Random Agent'
 
         x, y, has_ball, name = player_info
         super(RandomAgent, self).__init__(x, y, has_ball, name)

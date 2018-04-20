@@ -1,12 +1,15 @@
-from project3.agents import QLearner
+from project3.agents import QLearner, FriendQLearner
 from project3.environment import World
+from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
 from project3.vars import *
 
-player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
-opponent = QLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
-env = World(player, opponent)
+player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+opponent = FriendQLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
+env = World(player, opponent, debug=DEBUG)
+
+control_state_Q_updates = []
 all_Q_updates = []
 all_rewards = []
 all_states_visited = []
@@ -32,12 +35,12 @@ try:
         if env.debug:
             env.render()
 
-        while not done and i < MAX_STEPS and gamestep < 500:
+        while not done and i < MAX_STEPS and gamestep < MAX_GAME_LENGTH:
             i += 1
             gamestep += 1
 
             if i % 100000 == 0:
-                print(i)
+                logger.info(i)
 
             # Execute step
             new_state, reward, done, details = env.step(action, op_action)
@@ -49,32 +52,34 @@ try:
 
                 # Manually set terminal state Q value as immediate reward and nothing else
                 player.Q[player.s, player.a] = reward
-
-                # Track updates per timestep
-                all_Q_updates.append(0)
-                all_rewards.append(reward)
-                all_states_visited.append(len(states_visited))
-
-                break
+                delta_Q = 0
 
             # Select next action
             else:
-                action, delta_Q = player.query(state, action, new_state, reward)
-                op_action, op_delta_Q = opponent.query(state, op_action, new_state, reward)
+                if player.collaborative:
+                    action, delta_Q = player.query(state, action, op_action, new_state, reward)
+                    op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, reward)
+                else:
+                    action, delta_Q = player.query(state, action, new_state, reward)
+                    op_action, op_delta_Q = opponent.query(state, op_action, new_state, reward)
 
                 # print('{}\t{}\t{}\t{}'.format(state, action, new_state, reward))
                 state = new_state
                 states_visited.add(new_state)
 
-                # Track updates per timestep
-                all_Q_updates.append(delta_Q)
-                all_rewards.append(reward)
-                all_states_visited.append(len(states_visited))
+            # Track updates per timestep
+            if state == CONTROL_STATE:
+                control_state_Q_updates.append(delta_Q)
+
+            all_Q_updates.append(delta_Q)
+            all_rewards.append(reward)
+            all_states_visited.append(len(states_visited))
+        break
 
 except KeyboardInterrupt:
     print('Gameplay halted')
 
-plot_results(all_Q_updates, title='Q-Learner')
+plot_results(control_state_Q_updates, title=player.algo_name)
 
 # Objective function (uCEQ)
 # def utilitarian(N, A, pi_s):

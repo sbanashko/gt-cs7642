@@ -23,9 +23,12 @@ class World:
 
         if self.debug:
             print('Step:')
-            print('First move: {}'.format('Player' if player_first else 'Opponent'))
-            print('Player action: {}'.format(player_action))
-            print('Opponent action: {}'.format(opponent_action))
+            if player_first:
+                print('Player action: {}'.format(self._get_direction(player_action)))
+                print('Opponent action: {}'.format(self._get_direction(opponent_action)))
+            else:
+                print('Opponent action: {}'.format(self._get_direction(opponent_action)))
+                print('Player action: {}'.format(self._get_direction(player_action)))
 
         for i, a in enumerate(actions):
             first_move = i == 0
@@ -133,6 +136,18 @@ class World:
             reward = -100
 
         return reward, reward != 0
+
+    def _get_direction(self, action):
+        if action == NORTH:
+            return '^'
+        elif action == SOUTH:
+            return 'v'
+        elif action == WEST:
+            return '<'
+        elif action == EAST:
+            return '>'
+        else:
+            return '.'
 
 
 class Player:
