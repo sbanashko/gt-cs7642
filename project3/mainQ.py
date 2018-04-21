@@ -1,4 +1,4 @@
-from project3.agents import QLearner, FriendQLearner, RandomAgent
+from project3.agents import QLearner, FriendQLearner, FoeQLearner, RandomAgent
 from project3.environment import World
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
@@ -75,14 +75,13 @@ try:
                 op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward)
 
             # Track updates per timestep
-            if state == CONTROL_STATE and action == STICK:
+            if state == CONTROL_STATE and op_action == STICK:
                 control_state_Q_updates.append(delta_Q)
             elif len(control_state_Q_updates) > 0:
                 control_state_Q_updates.append(control_state_Q_updates[-1])
             else:
                 control_state_Q_updates.append(0)
 
-            # print('{}\t{}\t{}\t{}'.format(state, action, new_state, reward))
             state = new_state
             states_visited.add(new_state)
 
