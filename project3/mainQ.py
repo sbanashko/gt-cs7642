@@ -3,6 +3,10 @@ from project3.environment import World
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
 from project3.vars import *
+import numpy as np
+
+
+np.random.seed(1)
 
 player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)

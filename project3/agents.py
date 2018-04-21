@@ -11,8 +11,8 @@ class QLearner(Player):
     Based on pseudocode in Greenwald (2008)
     Table 1, page 3
     """
-    def __init__(self, player_info, ns, na, alpha=0.5, alpha_decay_rate=0.9999954,
-                 random_action_rate=0.75, random_action_rate_decay=0.9995,
+    def __init__(self, player_info, ns, na, alpha=1.0, alpha_decay_rate=0.999993,
+                 random_action_rate=0.5, random_action_rate_decay=0.99,
                  gamma=0.9):
         self.s = 0
         self.a = 0
@@ -144,10 +144,24 @@ class FoeQLearner(QLearner):
         self.algo_name = 'Foe-Q'
 
     def query_initial(self, s):
+
         return 0
 
     def query(self, s, a, o, sp, r):
         return 0, 0
+
+    def update_Q(self, experience_tuple):
+        s, a, o, sp, r = experience_tuple
+        prev_Q = self.Q[s, a, o]
+
+        # Calculate Nash_i(s, Q_1, Q_2)
+        max_Qs = np.argmax(self.Q[s], axis=None)
+        a_ind, o_ind = np.unravel_index(max_Qs, self.Q[s].shape)
+        updated_Q = prev_Q + self.alpha * (r + self.gamma * self.Q[s, a_ind, o_ind] - prev_Q)
+
+        self.Q[s, a_ind, o_ind] = updated_Q
+        self.alpha *= self.alpha_decay_rate
+        return abs(updated_Q - prev_Q)
 
 
 class CEQLearner(QLearner):
