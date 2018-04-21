@@ -3,17 +3,24 @@ import numpy as np
 from project3.environment import Player
 
 
+# Littman (1994): alpha = 0.001, alpha_decay = 0.9999954
+# Greenwald (2008): alpha = ?, alpha_decay = ?, alpha_min = 0.001
+
 class QLearner(Player):
-    def __init__(self, player_info, ns, na, alpha=0.2, alpha_decay_rate=1.0,
-                 random_action_rate=0.75, random_action_rate_decay=0.999,
+    """
+    Based on pseudocode in Greenwald (2008)
+    Table 1, page 3
+    """
+    def __init__(self, player_info, ns, na, alpha=0.5, alpha_decay_rate=0.9999954,
+                 random_action_rate=0.75, random_action_rate_decay=0.9995,
                  gamma=0.9, dyna=0):
         self.s = 0
         self.a = 0
         self.ns = ns
         self.na = na
 
-        # S x A (non-collaborative learner)
-        self.Q = np.zeros((ns, na))
+        # S x A x O
+        self.Q = np.random.random((ns, na, na))
 
         self.alpha = alpha
         self.alpha_decay_rate = alpha_decay_rate
@@ -31,87 +38,6 @@ class QLearner(Player):
 
         x, y, has_ball, name = player_info
         super(QLearner, self).__init__(x, y, has_ball, name)
-
-    def query_initial(self, s):
-        """
-        Select action without updating the Q-table
-        :param s:
-        :return:
-        """
-        if np.random.random() < self.random_action_rate:
-            action = np.random.choice(self.na)
-            self.random_action_rate *= self.random_action_rate_decay
-        else:
-            action = np.argmax([self.Q[self.s, a] for a in range(self.na)])
-
-        # Update current state and action
-        self.s = s
-        self.a = action
-
-        return action
-
-    def query(self, s, a, sp, r):
-        """
-        Select action and update Q-table
-        :param s: previous state
-        :param a: selected action
-        :param sp: new state
-        :param r: immediate reward
-        :return:
-        """
-        delta_Q = self.update_Q((s, a, sp, r))
-
-        # Dyna-Q
-        if self.dyna > 0:
-
-            # Replace T and R models with in-memory historical data
-            self.memory.append((self.s, self.a, sp, r))
-
-            # Hallucinate
-            for d in range(self.dyna):
-                # Update Q-table
-                self.update_Q(self.memory[np.random.choice(len(self.memory))])
-
-        if np.random.random() < self.random_action_rate:
-            action = np.random.choice(self.na)
-            self.random_action_rate *= self.random_action_rate_decay
-        else:
-            action = np.argmax([self.Q[sp, a] for a in range(self.na)])
-
-        # Update current state and action
-        self.s = sp
-        self.a = action
-
-        return action, delta_Q
-
-    def update_Q(self, experience_tuple):
-        """
-        Update Q table
-        :param experience_tuple: s, a, s', r
-        :return:
-        """
-        s, a, sp, r = experience_tuple
-        prev_Q = self.Q[s, a]
-        updated_Q = prev_Q + self.alpha * (
-                r + self.gamma * self.Q[sp, np.argmax([self.Q[sp, i] for i in range(self.na)])] - prev_Q)
-        self.Q[s, a] = updated_Q
-        self.alpha *= self.alpha_decay_rate
-        return abs(updated_Q - prev_Q)
-
-
-class FriendQLearner(QLearner):
-
-    def __init__(self, *args):
-        super(FriendQLearner, self).__init__(*args)
-
-        # S x A x O (assumes 2-player game and same number of actions
-        # available to each player)
-        self.Q = np.zeros((self.ns, self.na, self.na))
-
-        # self.random_action_rate = 0.0
-
-        self.collaborative = True
-        self.algo_name = 'Friend-Q'
 
     def query_initial(self, s):
         """
@@ -143,11 +69,98 @@ class FriendQLearner(QLearner):
         """
         delta_Q = self.update_Q((s, a, o, sp, r))
 
+        # Dyna-Q
+        if self.dyna > 0:
+
+            # Replace T and R models with in-memory historical data
+            self.memory.append((self.s, self.a, sp, r))
+
+            # Hallucinate
+            for d in range(self.dyna):
+                # Update Q-table
+                self.update_Q(self.memory[np.random.choice(len(self.memory))])
+
         if np.random.random() < self.random_action_rate:
             action = np.random.choice(self.na)
             self.random_action_rate *= self.random_action_rate_decay
         else:
-            action, op_action = np.unravel_index(np.argmax([self.Q[sp]]), self.Q[s].shape)
+            action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
+
+        # Update current state and action
+        self.s = sp
+        self.a = action
+
+        return action, delta_Q
+
+    def update_Q(self, experience_tuple):
+        """
+        Update Q table
+        :param experience_tuple: s, a, o, s', r
+        :return:
+        """
+        s, a, o, sp, r = experience_tuple
+        action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
+        prev_Q = self.Q[s, a, o]
+        updated_Q = (1 - self.alpha) * prev_Q + \
+                    self.alpha * ((1 - self.gamma) * r + self.gamma * self.Q[sp, action, op_action] - prev_Q)
+        self.Q[s, a, o] = updated_Q
+        self.alpha *= self.alpha_decay_rate
+        return abs(updated_Q - prev_Q)
+
+
+class FriendQLearner(QLearner):
+    """
+    Based on equations in Littman (2001)
+    Equation 6, page 2
+    Equation 7, page 4
+    """
+    def __init__(self, *args):
+        super(FriendQLearner, self).__init__(*args)
+
+        self.random_action_rate = 0
+
+        # S x A x O (assumes 2-player game and same number of actions
+        # available to each player)
+        # self.Q = np.zeros((self.ns, self.na, self.na))
+
+        self.collaborative = True
+        self.algo_name = 'Friend-Q'
+
+    def query_initial(self, s):
+        """
+        Select action without updating the Q-table
+        :param s:
+        :return:
+        """
+        action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
+
+        # Update current state and action
+        self.s = s
+        self.a = action
+
+        return action
+
+    def query(self, s, a, o, sp, r):
+        """
+        Select action and update Q-table
+
+        Friend-Q
+
+        Vi(s) = max_{a \in A} Qi(s, a, o)
+
+        Friend-Q works cooperatively, so each action set (player action "a" and opponent
+        action "o" combo) is selected in order to achieve the highest possible value V(s)
+        from the Q table at Q(s, a, o)
+
+        :param s: previous state
+        :param a: selected action
+        :param o: opponent action
+        :param sp: new state
+        :param r: immediate reward
+        :return:
+        """
+        delta_Q = self.update_Q((s, a, o, sp, r))
+        action, op_action = np.unravel_index(np.argmax([self.Q[sp]]), self.Q[s].shape)
 
         # Update current state and action
         self.s = sp
@@ -177,6 +190,10 @@ class FriendQLearner(QLearner):
 
 class FoeQLearner(QLearner):
     """
+    Based on equations in Littman (2001)
+    Equation 6, page 2
+    Equation 8, page 4
+
     Equivalently, minimax-Q
     """
     def __init__(self, *args):
@@ -184,10 +201,16 @@ class FoeQLearner(QLearner):
 
         # S x A x O (assumes 2-player game and same number of actions
         # available to each player)
-        self.Q = np.zeros((self.ns, self.na, self.na))
+        self.Q = np.ones((self.ns, self.na, self.na))
+        self.V = np.ones(self.ns)
+        self.pi = np.zeros((self.ns, self.na))
+        self.pi.fill(1./self.na)
 
         self.collaborative = True
         self.algo_name = 'Foe-Q'
+
+    def query(self, s, a, o, sp, r):
+        fucks_given = 0
 
 
 class CEQLearner(QLearner):
@@ -198,11 +221,14 @@ class CEQLearner(QLearner):
         # action space from state s (theoretically there'd be one of these for
         # every state)
         # Initialize to equal probabilities == uniform random
-        self.Ps = [1. / self.na for _ in range(self.na)]
+        self.pi = np.zeros((self.ns, self.na))
+        self.pi.fill(1./self.na)
 
         # S x A x O (assumes 2-player game and same number of actions
         # available to each player)
         self.Q = np.zeros((self.ns, self.na, self.na))
+        self.V = np.ones(self.ns)
+
 
         self.collaborative = True
         self.algo_name = 'Correlated-Q'
@@ -219,16 +245,18 @@ class CEQLearner(QLearner):
 
 
 class RandomAgent(Player):
-    def __init__(self, player_info, na):
+    def __init__(self, player_info, ns, na):
         self.player_info = player_info
         self.na = na
+        self.Q = np.zeros((ns, na, na))
         self.algo_name = 'Random Agent'
 
         x, y, has_ball, name = player_info
         super(RandomAgent, self).__init__(x, y, has_ball, name)
 
-    def query_initial(self):
+    def query_initial(self, s):
         return np.random.choice(self.na)
 
-    def query(self):
-        return np.random.choice(self.na)
+    def query(self, s, a, o, sp, r):
+        # Fake delta_Q = 0
+        return np.random.choice(self.na), 0

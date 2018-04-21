@@ -1,7 +1,7 @@
 # Runtime
-DEBUG = True
+DEBUG = False
 MAX_STEPS = 10e5
-MAX_GAME_LENGTH = 500
+MAX_GAME_LENGTH = 10e5
 CONTROL_STATE = 81
 
 # Agents
@@ -29,3 +29,4 @@ NORTH = 0
 SOUTH = 1
 WEST = 2
 EAST = 3
+STICK = 4

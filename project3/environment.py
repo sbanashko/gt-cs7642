@@ -22,7 +22,6 @@ class World:
             player_first = False
 
         if self.debug:
-            print('Step:')
             if player_first:
                 print('Player action: {}'.format(self._get_direction(player_action)))
                 print('Opponent action: {}'.format(self._get_direction(opponent_action)))

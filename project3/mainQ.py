@@ -1,11 +1,11 @@
-from project3.agents import QLearner, FriendQLearner
+from project3.agents import QLearner, FriendQLearner, RandomAgent
 from project3.environment import World
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
 from project3.vars import *
 
-player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
-opponent = QLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
+player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+opponent = FriendQLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = World(player, opponent, debug=DEBUG)
 
@@ -18,17 +18,17 @@ all_rar = []
 
 states_visited = set()
 
-i = 0
+t = 0
+player_wins = 0
+op_wins = 0
+total_games = 0
 
 try:
-    while i < MAX_STEPS:
+    while t < MAX_STEPS:
 
         state = env.reset()
         states_visited.add(state)
         done = False
-
-        # Track game iterations anyway to force reset after boring game
-        gamestep = 0
 
         action = player.query_initial(state)
         op_action = opponent.query_initial(state)
@@ -37,15 +37,19 @@ try:
         if env.debug:
             env.render()
 
-        while not done and i < MAX_STEPS and gamestep < MAX_GAME_LENGTH:
-            i += 1
-            gamestep += 1
+        while not done and t < MAX_STEPS:
+            t += 1
 
-            if i % 100000 == 0:
-                logger.info(i)
+            if t % 10000 == 0:
+                logger.info('{}\t{}\t{}'.format(
+                    t,
+                    round(1. * player_wins / total_games, 2),
+                    round(1. * op_wins / total_games, 2)))
 
-            # Execute step
+            # Execute step (zero-sum game)
             new_state, reward, done, details = env.step(action, op_action)
+            op_reward = -reward
+
             if env.debug:
                 env.render()
 
@@ -53,17 +57,22 @@ try:
             if done:
 
                 # Manually set terminal state Q value as immediate reward and nothing else
-                player.Q[player.s, player.a] = reward
+                player.Q[state, action, op_action] = reward
+                opponent.Q[state, op_action, action] = op_reward
                 delta_Q = 0
+                op_delta_Q = 0
+
+                # Trackers
+                if reward > 0:
+                    player_wins += 1
+                elif reward < 0:
+                    op_wins += 1
+                total_games += 1
 
             # Select next action
             else:
-                if player.collaborative:
-                    action, delta_Q = player.query(state, action, op_action, new_state, reward)
-                    op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, reward)
-                else:
-                    action, delta_Q = player.query(state, action, new_state, reward)
-                    op_action, op_delta_Q = opponent.query(state, op_action, new_state, reward)
+                action, delta_Q = player.query(state, action, op_action, new_state, reward)
+                op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward)
 
             # Track updates per timestep
             if state == CONTROL_STATE and action == STICK:
@@ -88,9 +97,10 @@ try:
         # break
 
 except KeyboardInterrupt:
-    print('Gameplay halted')
+    print('Gameplay halted after {} timesteps'.format(t))
 
-plot_results(control_state_Q_updates, all_alphas, title=player.algo_name, right_axis_title='Learning rate')
+plot_results(control_state_Q_updates, title=player.algo_name)
+
 # plot_results(all_Q_updates, title=player.algo_name)
 
 # Objective function (uCEQ)
