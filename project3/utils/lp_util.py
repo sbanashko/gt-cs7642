@@ -81,5 +81,5 @@ def solve(Q_s, objective_fn=None, learner=None):
     lp.solve()
 
     # [pi_N, pi_E, pi_W, pi_S, pi_X, V] ^ T
-    probabilities = ineq.multiplier.value[:na].T
+    probabilities = np.array(ineq.multiplier.value[:na].T)
     return probabilities / probabilities.sum(0)
