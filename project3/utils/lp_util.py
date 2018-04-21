@@ -1,51 +1,85 @@
-from cvxopt import matrix
+from cvxopt import matrix, solvers
 from cvxopt.modeling import dot, op, variable
 import numpy as np
 
 
-def solve(Q_s):
-    # Variable vector [pi_N, pi_E, pi_W, pi_S, pi_X, V]
-    x = variable(Q_s.shape[0] + 1)
+solvers.options['show_progress'] = False
 
-    # minimize cTx == -V
+
+def solve(Q_s, objective_fn=None, learner=None):
+
+    # pi_N, pi_E, pi_W, pi_S, pi_X
+    na = Q_s.shape[0]
+
+    # Variable vector [pi_N, pi_E, pi_W, pi_S, pi_X, V]
+    x = variable(na + 1)
+
+    # if learner == 'foe':
+    #     # Minimax
+    #     op = min(range(Q_s.shape[1]), key=lambda a2: sum([Q_s[a1, a2] for a1 in range(Q_s.shape[0])]))
+    #     player_vals = Q_s.T[op]
+    #
+    #     # Now use this to create constraints
+    #     player_vals
+    #
+    #     # Maximize the probability distribution pi
+    #     obj_matrix = np.zeros(len(x))
+    #     obj_matrix[-1] = -1
+    #     c = matrix(obj_matrix)
+    #     objective_fn = dot(c, x)
+    #
+    # elif learner == 'uceq':
+    #     # Default to minimize cTx == -V (same as maximize V)
+    #     obj_matrix = np.zeros(len(x))
+    #     obj_matrix[-1] = -1
+    #     c = matrix(obj_matrix)
+    #     objective_fn = dot(c, x)
+
+    # Default to minimize cTx == -V (same as maximize V)
     obj_matrix = np.zeros(len(x))
-    obj_matrix[-1] = -1
+    obj_matrix[-1] = -1.
     c = matrix(obj_matrix)
-    objective = dot(c, x)
+    objective_fn = dot(c, x)
 
     # Matrices
     ineq_matrix = np.zeros((0, len(x)))
 
-    # R = 0, P = 1, S = 2, V = V
     for row in Q_s:
         new_row = [row[i] for i in range(len(row))]
         new_row.append(1.)
         ineq_matrix = np.vstack([ineq_matrix, new_row])
 
-    # Other known constraints
-    pi_vars = np.ones(len(x))
-    np.append(pi_vars, 0.)
-    ineq_matrix = np.vstack([ineq_matrix, pi_vars])  # pi <= 1
+    # ~~~ Other known constraints ~~~
+
+    # sum_{pi_i} = 1
+    pi_vars = np.ones(na)
+    pi_vars = np.append(pi_vars, 0.)
+    ineq_matrix = np.vstack([ineq_matrix, pi_vars])
+
+    # each pi_i >= 0 (same as -pi_i <= 0)
+    for i in range(na):
+        new_row = np.zeros(len(x))
+        new_row[i] = -1.
+        ineq_matrix = np.vstack([ineq_matrix, new_row])
 
     A = matrix(ineq_matrix)
-    pi_sum = np.zeros(len(x))
-    np.append(pi_sum, 1.)
-    b = matrix(pi_sum)
+
+    # ~~~ Limits to other known constraints ~~~
+
+    # sum_{pi_i} = 1
+    limits = np.append(np.zeros(na), 1.)
+
+    # each pi_i >= 0
+    limits = np.append(limits, np.zeros(na))
+
+    b = matrix(limits)
 
     # Linear constraints embedded in matrices
     ineq = (A * x <= b)
 
-    lp = op(objective, ineq)
+    lp = op(objective_fn, ineq)
     lp.solve()
 
     # [pi_N, pi_E, pi_W, pi_S, pi_X, V] ^ T
-    return ineq.multiplier.value
-#
-#
-# sample = np.array([[1, 2, 3, 4, 5],
-#                    [4, 3, 5, 2, 3],
-#                    [5, 4, 9, 1, 0],
-#                    [3, 8, 7, 6, 6],
-#                    [9, 1, 0, 3, 4]])
-#
-# print(solve(sample))
+    probabilities = ineq.multiplier.value[:na].T
+    return probabilities / probabilities.sum(0)

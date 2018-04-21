@@ -8,7 +8,7 @@ import numpy as np
 
 np.random.seed(1)
 
-player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+player = FoeQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = World(player, opponent, debug=DEBUG)
@@ -44,7 +44,7 @@ try:
         while not done and t < MAX_STEPS:
             t += 1
 
-            if t % 10000 == 0 and total_games > 0:
+            if t % 1000 == 0 and total_games > 0:
                 logger.info('{}\t{}\t{}'.format(
                     t,
                     round(1. * player_wins / total_games, 2),
@@ -82,12 +82,12 @@ try:
 
             # Select next action
             else:
-                if isinstance(player, QLearner):
+                if type(player) == QLearner:
                     action, delta_Q = player.query(state, action, new_state, reward)
                 else:
                     action, delta_Q = player.query(state, action, op_action, new_state, reward)
 
-                if isinstance(opponent, QLearner):
+                if type(opponent) == QLearner:
                     op_action, op_delta_Q = opponent.query(state, op_action, new_state, op_reward)
                 else:
                     op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward)
