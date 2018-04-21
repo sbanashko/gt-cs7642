@@ -5,7 +5,10 @@ from project3.utils.plot_util import plot_results
 from project3.vars import *
 import numpy as np
 
-
+# Q seed = 1
+# Friend-Q seed = 1
+# Foe-Q seed = 1
+# uCE-Q seed = 1
 np.random.seed(1)
 
 player = FoeQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
@@ -14,6 +17,8 @@ opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 env = World(player, opponent, debug=DEBUG)
 
 control_state_Q_updates = []
+actual_updates = 0
+
 all_Q_updates = []
 all_rewards = []
 all_states_visited = []
@@ -37,7 +42,6 @@ try:
         action = player.query_initial(state)
         op_action = opponent.query_initial(state)
 
-        # print('~~~~~~~~~~ Game Reset ~~~~~~~~~~\n')
         if env.debug:
             env.render()
 
@@ -95,7 +99,8 @@ try:
             # Track updates per timestep
             # See Greenwald (2008)
             if state == CONTROL_STATE and action == SOUTH and (isinstance(player, QLearner) or op_action == STICK):
-                    control_state_Q_updates.append(delta_Q)
+                control_state_Q_updates.append(delta_Q)
+                actual_updates += 1
             elif len(control_state_Q_updates) > 0:
                 control_state_Q_updates.append(control_state_Q_updates[-1])
             else:
@@ -112,20 +117,11 @@ try:
 
             if done:
                 break
-        # break
 
 except KeyboardInterrupt:
-    print('Gameplay halted after {} timesteps'.format(t))
+    logger.warn('Gameplay halted after {} timesteps'.format(t))
 
+logger.warn('Actual updates in state s with action SOUTH and op_action STICK: {}'.format(actual_updates))
 plot_results(control_state_Q_updates, title=player.algo_name)
 
 # plot_results(all_Q_updates, title=player.algo_name)
-
-# Objective function (uCEQ)
-# def utilitarian(N, A, pi_s):
-#     [sum(Q[j][s, a]) for j in N]
-#     pass
-
-# print(max([2, -1, -5], key=lambda i: pow(i, 2)))
-
-# Rationality constraints
