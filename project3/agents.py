@@ -19,8 +19,8 @@ class QLearner(Player):
         self.ns = ns
         self.na = na
 
-        # S x A x O
-        self.Q = np.random.random((self.ns, self.na, self.na)) * 2 - 1
+        # S x A
+        self.Q = np.random.random((self.ns, self.na)) * 2 - 1
 
         self.alpha = alpha
         self.alpha_decay_rate = alpha_decay_rate
@@ -40,7 +40,7 @@ class QLearner(Player):
             action = np.random.choice(self.na)
             self.random_action_rate *= self.random_action_rate_decay
         else:
-            action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
+            action = np.argmax(self.Q[s])
 
         # Update current state and action
         self.s = s
@@ -48,14 +48,14 @@ class QLearner(Player):
 
         return action
 
-    def query(self, s, a, o, sp, r):
-        delta_Q = self.update_Q((s, a, o, sp, r))
+    def query(self, s, a, sp, r):
+        delta_Q = self.update_Q((s, a, sp, r))
 
         if np.random.random() < self.random_action_rate:
             action = np.random.choice(self.na)
             self.random_action_rate *= self.random_action_rate_decay
         else:
-            action, op_action = np.unravel_index(np.argmax([self.Q[sp]]), self.Q[s].shape)
+            action = np.argmax(self.Q[sp])
 
         # Update current state and action
         self.s = sp
@@ -64,12 +64,12 @@ class QLearner(Player):
         return action, delta_Q
 
     def update_Q(self, experience_tuple):
-        s, a, o, sp, r = experience_tuple
-        action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
-        prev_Q = self.Q[s, a, o]
+        s, a, sp, r = experience_tuple
+        action = np.argmax(self.Q[s])
+        prev_Q = self.Q[s, a]
         updated_Q = (1 - self.alpha) * prev_Q + \
-                    self.alpha * ((1 - self.gamma) * r + self.gamma * self.Q[sp, action, op_action] - prev_Q)
-        self.Q[s, a, o] = updated_Q
+                    self.alpha * ((1 - self.gamma) * r + self.gamma * self.Q[sp, action] - prev_Q)
+        self.Q[s, a] = updated_Q
         self.alpha *= self.alpha_decay_rate
         return abs(updated_Q - prev_Q)
 
@@ -82,6 +82,7 @@ class FriendQLearner(QLearner):
     """
     def __init__(self, *args):
         super(FriendQLearner, self).__init__(*args)
+        self.Q = np.ones((self.ns, self.na, self.na))
         self.algo_name = 'Friend-Q'
 
     def query_initial(self, s):
@@ -152,6 +153,7 @@ class FoeQLearner(QLearner):
 class CEQLearner(QLearner):
     def __init__(self, *args):
         super(CEQLearner, self).__init__(*args)
+        self.Q = np.ones((self.ns, self.na, self.na))
         self.V = np.ones(self.ns)
         self.pi = np.zeros((self.ns, self.na))
         self.pi.fill(1./self.na)
