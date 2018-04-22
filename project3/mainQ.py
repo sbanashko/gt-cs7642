@@ -1,5 +1,5 @@
 from project3.agents import QLearner, FriendQLearner, FoeQLearner, CEQLearner, RandomAgent
-from project3.environment import World
+from project3.external.emoudahi_env import SoccerEnv
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
 from project3.vars import *
@@ -14,7 +14,9 @@ np.random.seed(1)
 player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
-env = World(player, opponent, debug=DEBUG)
+env = SoccerEnv()
+
+CONTROL_STATE = env.encode_state(0, 2, 0, 1, 0)
 
 control_state_Q_updates = []
 actual_updates = 0
@@ -36,13 +38,15 @@ try:
     while t < MAX_STEPS:
 
         state = env.reset()
+        # Force restart in control state
+        env.s = CONTROL_STATE
         states_visited.add(state)
         done = False
 
         action = player.query_initial(state)
         op_action = opponent.query_initial(state)
 
-        if env.debug:
+        if DEBUG:
             env.render()
 
         while not done and t < MAX_STEPS:
@@ -55,10 +59,10 @@ try:
                     round(1. * op_wins / total_games, 2)))
 
             # Execute step (zero-sum game)
-            new_state, reward, done, details = env.step(action, op_action)
+            new_state, reward, done, details = env.step(env.encode_action(action, op_action))
             op_reward = -reward
 
-            if env.debug:
+            if DEBUG:
                 env.render()
 
             # Quit loop and reset environment
@@ -97,13 +101,14 @@ try:
                     op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward)
 
             # Track updates per timestep
-            # See Greenwald (2008)
-            if state == CONTROL_STATE and action == SOUTH and (isinstance(player, QLearner) or op_action == STICK):
-                if delta_Q == 0:
-                    control_state_Q_updates.append(control_state_Q_updates[-1])
-                else:
-                    control_state_Q_updates.append(delta_Q)
-                actual_updates += 1
+            # See Greenwald (2003)
+            if state == CONTROL_STATE:
+                if action == env.Action.S and (isinstance(player, QLearner) or op_action == env.Action.Stick):
+                    if delta_Q == 0:
+                        control_state_Q_updates.append(control_state_Q_updates[-1])
+                    else:
+                        control_state_Q_updates.append(delta_Q)
+                    actual_updates += 1
             elif len(control_state_Q_updates) > 0:
                 control_state_Q_updates.append(control_state_Q_updates[-1])
             else:

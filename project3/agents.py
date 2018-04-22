@@ -88,6 +88,8 @@ class FriendQLearner(QLearner):
         self.Q = np.ones((self.ns, self.na, self.na))
         self.V = np.zeros(self.ns)
         # self.alpha = 1.0
+        self.epsilon = 0.2
+        self.epsilon_decay = 0.5
         self.algo_name = 'Friend-Q'
 
     def query_initial(self, s):
