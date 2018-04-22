@@ -11,8 +11,8 @@ import numpy as np
 # uCE-Q seed =
 np.random.seed(0)
 
-player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
-opponent = QLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
+player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = SoccerEnv()
 
@@ -104,18 +104,19 @@ try:
             # See Greenwald (2003)
             if state == CONTROL_STATE and action == env.Action.S and (isinstance(player, QLearner) or op_action == env.Action.Stick):
                 if delta_Q == 0:
-                    control_state_Q_updates.append(control_state_Q_updates[-1])
+                    control_dQ = control_state_Q_updates[-1]
                 else:
-                    control_state_Q_updates.append(delta_Q)
+                    control_dQ = delta_Q
                 actual_updates += 1
             elif len(control_state_Q_updates) > 0:
-                control_state_Q_updates.append(control_state_Q_updates[-1])
+                control_dQ = control_state_Q_updates[-1]
             else:
-                control_state_Q_updates.append(0)
+                control_dQ = 0
 
             state = new_state
             states_visited.add(new_state)
 
+            control_state_Q_updates.append(control_dQ)
             all_Q_updates.append(delta_Q)
             all_rewards.append(reward)
             all_states_visited.append(len(states_visited))
@@ -129,6 +130,6 @@ except KeyboardInterrupt:
     logger.warn('Gameplay halted after {} timesteps'.format(t))
 
 logger.warn('Actual updates in state s with action SOUTH and op_action STICK: {}'.format(actual_updates))
-plot_results(control_state_Q_updates, title='Q-Learner vs Q-Learner')
+plot_results(control_state_Q_updates, title=player.algo_name)
 
 # plot_results(all_Q_updates, title=player.algo_name)

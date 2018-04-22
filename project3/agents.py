@@ -99,17 +99,18 @@ class FriendQLearner(QLearner):
 
     def __init__(self, *args):
         super(FriendQLearner, self).__init__(*args)
+        # self.Q = np.random.random((self.ns, self.na, self.na)) * 2 - 1
         self.Q = np.ones((self.ns, self.na, self.na))
         self.V = np.zeros(self.ns)
         # self.alpha = 1.0
-        self.epsilon = 0.2
+        self.epsilon = 0.001
         self.epsilon_decay = 0.5
         self.algo_name = 'Friend-Q'
 
     def query_initial(self, s):
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.na)
-            self.epsilon *= self.epsilon_decay
+            self.epsilon = min(self.epsilon * self.epsilon_decay, self.epsilon_min)
         else:
             action, op_action = np.unravel_index(np.argmax([self.Q[s]]), self.Q[s].shape)
 
@@ -131,9 +132,10 @@ class FriendQLearner(QLearner):
 
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.na)
-            self.epsilon *= self.epsilon_decay
+            self.epsilon = min(self.epsilon * self.epsilon_decay, self.epsilon_min)
         else:
-            action, op_action = np.unravel_index(np.argmax([self.Q[sp]]), self.Q[s].shape)
+            max_Qs = np.argmax([self.Q[sp]], axis=None)
+            action, op_action = np.unravel_index(max_Qs, self.Q[s].shape)
 
         # Update current state and action
         self.s = sp
@@ -147,7 +149,7 @@ class FriendQLearner(QLearner):
 
         # Calculate Nash_i(s, Q_1, Q_2)
         max_Qs = np.argmax(self.Q[s], axis=None)
-        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[sp])
+        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[s])
 
         self.Q[s, a, o] = updated_Q
 
@@ -156,15 +158,6 @@ class FriendQLearner(QLearner):
 
         self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         return abs(updated_Q - prev_Q)
-
-        # # Calculate Nash_i(s, Q_1, Q_2)
-        # max_Qs = np.argmax(self.Q[s], axis=None)
-        # a_ind, o_ind = np.unravel_index(max_Qs, self.Q[s].shape)
-        # updated_Q = prev_Q + self.alpha * (r + self.gamma * self.Q[s, a_ind, o_ind] - prev_Q)
-        #
-        # self.Q[s, a_ind, o_ind] = updated_Q
-        # self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
-        # return abs(updated_Q - prev_Q)
 
 
 class FoeQLearner(QLearner):
