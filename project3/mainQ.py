@@ -8,11 +8,11 @@ import numpy as np
 # Q seed = 0
 # Friend-Q seed =
 # Foe-Q seed =
-# uCE-Q seed = 
+# uCE-Q seed =
 np.random.seed(0)
 
 player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
-opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
+opponent = QLearner(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = SoccerEnv()
 
@@ -129,6 +129,6 @@ except KeyboardInterrupt:
     logger.warn('Gameplay halted after {} timesteps'.format(t))
 
 logger.warn('Actual updates in state s with action SOUTH and op_action STICK: {}'.format(actual_updates))
-plot_results(control_state_Q_updates, title=player.algo_name)
+plot_results(control_state_Q_updates, title='Q-Learner vs Q-Learner')
 
 # plot_results(all_Q_updates, title=player.algo_name)

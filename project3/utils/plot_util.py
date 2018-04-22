@@ -8,7 +8,7 @@ def plot_results(Q_updates, right_axis=None, title='Q Updates', right_axis_title
     ax1.set_xlabel('Simulation Iteration')
     ax1.plot(Q_updates, 'b-', lw=0.1)
     ax1.set_ylabel('Q-value Difference')
-    ax1.set_ylim((0, 0.5))
+    ax1.set_ylim((0, 5.0))
     ax1.tick_params('y')
 
     if right_axis is not None:
