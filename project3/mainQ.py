@@ -9,9 +9,9 @@ import numpy as np
 # Friend-Q seed = 1
 # Foe-Q seed = 1
 # uCE-Q seed = 1
-np.random.seed(1)
+np.random.seed(0)
 
-player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = SoccerEnv()
@@ -70,13 +70,13 @@ try:
 
                 # Manually set terminal state Q value as immediate reward and nothing else
                 if isinstance(player, QLearner):
-                    player.Q[state, action] = reward
+                    player.Q[state, action] = reward / 100.
                 else:
-                    player.Q[state, action, op_action] = reward
+                    player.Q[state, action, op_action] = reward / 100.
                 if isinstance(opponent, QLearner):
-                    opponent.Q[state, op_action] = op_reward
+                    opponent.Q[state, op_action] = reward / 100.
                 else:
-                    opponent.Q[state, op_action, action] = op_reward
+                    opponent.Q[state, op_action, action] = reward / 100.
 
                 delta_Q = 0
                 op_delta_Q = 0
@@ -102,13 +102,12 @@ try:
 
             # Track updates per timestep
             # See Greenwald (2003)
-            if state == CONTROL_STATE:
-                if action == env.Action.S and (isinstance(player, QLearner) or op_action == env.Action.Stick):
-                    if delta_Q == 0:
-                        control_state_Q_updates.append(control_state_Q_updates[-1])
-                    else:
-                        control_state_Q_updates.append(delta_Q)
-                    actual_updates += 1
+            if state == CONTROL_STATE and action == env.Action.S and (isinstance(player, QLearner) or op_action == env.Action.Stick):
+                if delta_Q == 0:
+                    control_state_Q_updates.append(control_state_Q_updates[-1])
+                else:
+                    control_state_Q_updates.append(delta_Q)
+                actual_updates += 1
             elif len(control_state_Q_updates) > 0:
                 control_state_Q_updates.append(control_state_Q_updates[-1])
             else:

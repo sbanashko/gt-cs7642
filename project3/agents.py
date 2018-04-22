@@ -5,6 +5,7 @@ from project3.environment import Player
 # Littman (1994): alpha = 0.001, alpha_decay = 0.9999954
 # Greenwald (2008): alpha = ?, alpha_decay = ?, alpha_min = 0.001
 from project3.utils import lp_util
+from project3.utils.log_util import logger
 
 
 class QLearner(Player):
@@ -13,23 +14,35 @@ class QLearner(Player):
     Table 1, page 3
     """
 
-    def __init__(self, player_info, ns, na, alpha=1.0, alpha_decay=0.999993,
-                 epsilon=0.75, epsilon_decay=0.9995,
+    def __init__(self, player_info, ns, na,
+                 alpha=1.0, alpha_decay=0.999997, alpha_min=0.0,
+                 epsilon=0.75, epsilon_decay=0.99995, epsilon_min=0.01,
                  gamma=0.9):
         self.s = 0
         self.a = 0
         self.ns = ns
         self.na = na
 
-        # S x A
+        # Q table
+        # Initialized to [-1, 1) uniformly at random
         self.Q = np.random.random((self.ns, self.na)) * 2 - 1
+        # Initialized to [0, 1) uniformly at random
+        # self.Q = np.random.random((self.ns, self.na))
+        # Initialized to 0
+        # self.Q = np.zeros((self.ns, self.na))
 
+        # Learning rate
         self.alpha = alpha
         self.alpha_decay = alpha_decay
+        self.alpha_min = alpha_min
+
+        # Random action rate
         self.epsilon = epsilon
         self.epsilon_decay = epsilon_decay
+        self.epsilon_min = epsilon_min
+
+        # Discount rate
         self.gamma = gamma
-        self.memory = []
 
         # For graphing, logging, etc
         self.algo_name = 'Q-Learner'
@@ -40,7 +53,7 @@ class QLearner(Player):
     def query_initial(self, s):
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.na)
-            self.epsilon *= self.epsilon_decay
+            self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
         else:
             action = np.argmax(self.Q[s])
 
@@ -55,7 +68,7 @@ class QLearner(Player):
 
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.na)
-            self.epsilon *= self.epsilon_decay
+            self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
         else:
             action = np.argmax(self.Q[sp])
 
@@ -72,7 +85,8 @@ class QLearner(Player):
         updated_Q = (1 - self.alpha) * prev_Q + \
                     self.alpha * ((1 - self.gamma) * r + self.gamma * self.Q[sp, action] - prev_Q)
         self.Q[s, a] = updated_Q
-        self.alpha *= self.alpha_decay
+        # print('{} -> {}\t\talpha={}'.format(prev_Q, updated_Q, self.alpha))
+        self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         return abs(updated_Q - prev_Q)
 
 
@@ -140,7 +154,7 @@ class FriendQLearner(QLearner):
         # Update V[s] with Nash_i(s, Q_1, Q_2)
         self.V[s] = max_Qs
 
-        self.alpha *= self.alpha_decay
+        self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         return abs(updated_Q - prev_Q)
 
         # # Calculate Nash_i(s, Q_1, Q_2)
@@ -149,7 +163,7 @@ class FriendQLearner(QLearner):
         # updated_Q = prev_Q + self.alpha * (r + self.gamma * self.Q[s, a_ind, o_ind] - prev_Q)
         #
         # self.Q[s, a_ind, o_ind] = updated_Q
-        # self.alpha *= self.alpha_decay_rate
+        # self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         # return abs(updated_Q - prev_Q)
 
 
@@ -180,11 +194,12 @@ class FoeQLearner(QLearner):
         else:
             # Select new action with new probability distribution of action space at state s
             try:
-                action = np.random.choice(self.na, p=self.pi[s])
+                action = np.random.choice(range(self.na), p=self.pi[s])
             except ValueError:
                 # Stupid float precision... Normalize probabilities to sum to 1
+                logger.warn('Stupid float precision... Normalize probabilities to sum to 1')
                 self.pi[s] = self.pi[s] / self.pi[s].sum(0)
-                action = np.random.choice(self.na)
+                action = np.random.choice(range(self.na), p=self.pi[s])
 
         # Update current state and action
         self.s = s
@@ -201,11 +216,11 @@ class FoeQLearner(QLearner):
         else:
             # Select new action with new probability distribution of action space at state s
             try:
-                action = np.random.choice(self.na, p=self.pi[s])
+                action = np.random.choice(range(self.na), p=self.pi[s])
             except ValueError:
                 # Stupid float precision... Normalize probabilities to sum to 1
                 self.pi[s] = self.pi[s] / self.pi[s].sum(0)
-                action = np.random.choice(self.na)
+                action = np.random.choice(range(self.na), p=self.pi[s])
 
         # Update current state and action
         self.s = sp
@@ -230,7 +245,7 @@ class FoeQLearner(QLearner):
         self.V[s] = min(range(self.na), key=objective_fn)
 
         # Decay alpha
-        self.alpha *= self.alpha_decay
+        self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         return abs(updated_Q - prev_Q)
 
 
@@ -304,7 +319,7 @@ class CEQLearner(QLearner):
         self.V[s] = min(range(self.na), key=objective_fn)
 
         # Decay alpha
-        self.alpha *= self.alpha_decay
+        self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)
         return abs(updated_Q - prev_Q)
 
 
