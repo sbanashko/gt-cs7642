@@ -5,10 +5,10 @@ from project3.utils.plot_util import plot_results
 from project3.vars import *
 import numpy as np
 
-# Q seed = 1
-# Friend-Q seed = 1
-# Foe-Q seed = 1
-# uCE-Q seed = 1
+# Q seed = 0
+# Friend-Q seed =
+# Foe-Q seed =
+# uCE-Q seed = 
 np.random.seed(0)
 
 player = QLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
