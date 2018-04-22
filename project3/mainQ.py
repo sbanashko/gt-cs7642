@@ -1,4 +1,4 @@
-from project3.agents import QLearner, FriendQLearner, FoeQLearner, RandomAgent
+from project3.agents import QLearner, FriendQLearner, FoeQLearner, CEQLearner, RandomAgent
 from project3.environment import World
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
@@ -11,7 +11,7 @@ import numpy as np
 # uCE-Q seed = 1
 np.random.seed(1)
 
-player = FoeQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = World(player, opponent, debug=DEBUG)
@@ -48,7 +48,7 @@ try:
         while not done and t < MAX_STEPS:
             t += 1
 
-            if t % 1000 == 0 and total_games > 0:
+            if t % 10000 == 0 and total_games > 0:
                 logger.info('{}\t{}\t{}'.format(
                     t,
                     round(1. * player_wins / total_games, 2),
@@ -99,7 +99,10 @@ try:
             # Track updates per timestep
             # See Greenwald (2008)
             if state == CONTROL_STATE and action == SOUTH and (isinstance(player, QLearner) or op_action == STICK):
-                control_state_Q_updates.append(delta_Q)
+                if delta_Q == 0:
+                    control_state_Q_updates.append(control_state_Q_updates[-1])
+                else:
+                    control_state_Q_updates.append(delta_Q)
                 actual_updates += 1
             elif len(control_state_Q_updates) > 0:
                 control_state_Q_updates.append(control_state_Q_updates[-1])
@@ -113,7 +116,7 @@ try:
             all_rewards.append(reward)
             all_states_visited.append(len(states_visited))
             all_alphas.append(player.alpha)
-            all_rar.append(player.random_action_rate)
+            all_rar.append(player.epsilon)
 
             if done:
                 break

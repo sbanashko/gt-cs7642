@@ -129,9 +129,17 @@ class World:
 
     def _check_goal(self):
         reward = 0
+        # Player goal
         if self.player.possession and self.player.x == 0:
             reward = 100
+        # Opponent own goal
+        elif self.opponent.possession and self.opponent.x == 0:
+            reward = 100
+        # Opponent goal
         elif self.opponent.possession and self.opponent.x == FIELD_DIM_X - 1:
+            reward = -100
+        # Player own goal
+        elif self.player.possession and self.player.x == FIELD_DIM_X - 1:
             reward = -100
 
         return reward, reward != 0
