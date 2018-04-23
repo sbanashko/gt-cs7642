@@ -1,4 +1,4 @@
-# Project 2
+# Project 3
 
 ### CS 7642 Spring 2018
 
@@ -26,11 +26,11 @@ To run Project 3 code, clone the repository, cd into `project3` subdirectory, an
 
 By default, this script will train a uCE-Q Learner against a random agent.  You can change the player and/or opponent learner type to one of the following:
 
-* QLearner
-* FriendQLearner
-* FoeQLearner
-* CEQLearner
-* RandomAgent
+* `QLearner`
+* `FriendQLearner`
+* `FoeQLearner`
+* `CEQLearner`
+* `RandomAgent`
 
 Hyperparameter adjustments are best set in the agent constructor methods (see `agents.py`). Trackers like Q updates, random action rates, etc. collect data during training, so you will need to dig into the body of `main.py` to adjust or turn off these data gatherers. 
 
