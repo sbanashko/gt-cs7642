@@ -260,7 +260,6 @@ class CEQLearner(QLearner):
         # self.Q = np.ones((self.ns, self.na, self.na))
         self.Q = np.random.randn(self.ns, self.na, self.na)
         self.V = np.ones(self.ns)
-        # self.V = np.random.random(self.ns)
         self.pi = np.zeros((self.ns, self.na))
         self.pi.fill(1. / self.na)
         self.algo_name = 'Correlated-Q'
@@ -306,24 +305,24 @@ class CEQLearner(QLearner):
         return action, delta_Q
 
     def update_Q(self, experience_tuple, op_Q):
-        # TODO update V(s'), then Q(s, a')
 
         s, a, o, sp, r = experience_tuple
         prev_Q = self.Q[s, a, o]
-
-        # Update Q
-        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[sp])
-        self.Q[s, a, o] = updated_Q
 
         # Update pi (maximizing the minimum value V[s])
         joint_dist = lp_util.ce(self.Q[sp], op_Q[sp])
         self.pi[s] = np.sum(np.array(joint_dist).reshape((self.na, self.na)), axis=1)
         # self.pi[s] = lp_util.solve(self.Q[sp], self.algo_name)
 
-        # Update V[s]
-        # See Greenwald (2003) ?????
-        objective_fn = lambda op: sum([self.pi[s, ap] * self.Q[s, ap, op] for ap in range(self.na)])
-        self.V[s] = min(range(self.na), key=objective_fn)
+        # Update V[sp]
+        # See Greenwald (2005) page 10
+        # objective_fn = lambda op: sum([self.pi[s, ap] * self.Q[s, ap, op] for ap in range(self.na)])
+        # self.V[sp] = min(range(self.na), key=objective_fn)
+        self.V[sp] = sum([self.pi[sp, a_] * self.Q[sp, a_, o] for a_ in range(self.na)])
+
+        # Update Q
+        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[sp])
+        self.Q[s, a, o] = updated_Q
 
         # Decay alpha
         self.alpha = max(self.alpha * self.alpha_decay, self.alpha_min)

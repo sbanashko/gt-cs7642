@@ -13,7 +13,7 @@ from project3.vars import *
 # uCE-Q seed =
 np.random.seed(0)
 
-player = FoeQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+player = CEQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = SoccerEnv()
