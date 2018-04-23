@@ -102,7 +102,6 @@ class FriendQLearner(QLearner):
         self.Q = np.random.randn(self.ns, self.na, self.na)
         self.V = np.ones(self.ns)
         self.alpha_decay = 0.9999
-        self.epsilon_decay = 0.995
         self.algo_name = 'Friend-Q'
 
     def query_initial(self, s):
@@ -148,7 +147,7 @@ class FriendQLearner(QLearner):
 
         # Calculate Nash_i(s, Q_1, Q_2)
         max_Qs = np.max(self.Q[s])
-        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[s])
+        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[sp])
 
         self.Q[s, a, o] = updated_Q
 
@@ -179,22 +178,8 @@ class FoeQLearner(QLearner):
         self.V = np.zeros(self.ns)
         self.pi = np.empty((self.ns, self.na))
         self.pi.fill(1. / self.na)
-        # self.epsilon_decay = 0.9
-        # self.epsilon = 0
-
-        # alpha = 1.0, alpha_decay = 0.999997, alpha_min = 0.0,
-        # epsilon = 0.75, epsilon_decay = 0.99995, epsilon_min = 0.01,
-
-        # # Learning rate
-        # self.alpha = 1.0
         # self.alpha_decay = 0.999
         # self.alpha_min = 0.01
-        #
-        # # Random action rate
-        # self.epsilon = 1.0
-        # self.epsilon_decay = 0.99
-        # self.epsilon_min = 0.01
-
         self.algo_name = 'Foe-Q'
 
     def query_initial(self, s):
@@ -239,32 +224,24 @@ class FoeQLearner(QLearner):
         return action, delta_Q
 
     def update_Q(self, experience_tuple):
-        # TODO update pi_i(s'), then update V(s'), then Q(s, a')
         s, a, o, sp, r = experience_tuple
 
         # Update pi (maximizing the minimum value V[s])
         self.pi[sp] = lp_util.maxmin(self.Q[sp])
-        # self.pi[s] = lp_util.solve(self.Q[sp])
-
-        # Select action?
-        ap = np.random.choice(self.na, p=self.pi[sp])
 
         # 4a. Update V[s']
         # See Greenwald (2005) Table 2, page 12
-        # self.V[sp] = sum([self.pi[sp] * self.Q[sp, a_] for a_ in range(self.na)])
+        self.V[sp] = sum([self.pi[sp, a_] * self.Q[sp, a_, o] for a_ in range(self.na)])
         # See Littman (1994) Figure 1, page 4
-        # def vupdate(op):
-        #     return sum([self.pi[s, ap] * self.Q[s, ap, op]])
-        #
         # self.V[s] = min(range(self.na), key=lambda op: op)
         # See idk who to believe anymore
-        objective_fn = lambda op: sum([self.pi[s, ap] * self.Q[s, ap, op] for ap in range(self.na)])
-        self.V[sp] = min(range(self.na), key=objective_fn)
+        # objective_fn = lambda op: sum([self.pi[s, ap] * self.Q[s, ap, op] for ap in range(self.na)])
+        # self.V[sp] = min(range(self.na), key=objective_fn)
 
         prev_Q = self.Q[s, a, o]
 
         # 4b. Update Q[s, a]
-        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * (r + self.gamma * self.V[sp])
+        updated_Q = (1 - self.alpha) * prev_Q + self.alpha * ((1 - self.gamma) * r + self.gamma * self.V[sp])
         self.Q[s, a, o] = updated_Q
 
         # Decay alpha
@@ -320,7 +297,7 @@ class CEQLearner(QLearner):
             except ValueError:
                 # Stupid float precision... Normalize probabilities to sum to 1
                 self.pi[s] = self.pi[sp] / self.pi[sp].sum(0)
-                action = np.random.choice(self.na)
+                action = np.random.choice(self.na, p=self.pi[sp])
 
         # Update current state and action
         self.s = s

@@ -14,6 +14,7 @@ def plot_results(Q_updates, right_axis=None, title='Q Updates', right_axis_title
     if right_axis is not None:
         ax2 = ax1.twinx()
         ax2.plot(right_axis, 'g-', lw=0.5)
+        ax2.set_ylim((0, 1.0))
         ax2.set_ylabel(right_axis_title)
         ax2.tick_params('y')
 

@@ -13,7 +13,7 @@ from project3.vars import *
 # uCE-Q seed =
 np.random.seed(0)
 
-player = FriendQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
+player = FoeQLearner(PLAYER_INFO, NUM_STATES, NUM_ACTIONS)
 opponent = RandomAgent(OPPONENT_INFO, NUM_STATES, NUM_ACTIONS)
 
 env = SoccerEnv()
@@ -112,10 +112,7 @@ try:
             # See Greenwald (2003)
             if state == CONTROL_STATE and action == env.Action.S and (
                     isinstance(player, QLearner) or op_action == env.Action.Stick):
-                if delta_Q == 0:
-                    control_dQ = control_state_Q_updates[-1]
-                else:
-                    control_dQ = delta_Q
+                control_dQ = delta_Q
                 actual_updates += 1
             elif len(control_state_Q_updates) > 0:
                 control_dQ = control_state_Q_updates[-1]
