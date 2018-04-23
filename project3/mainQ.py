@@ -1,12 +1,14 @@
-from project3.agents import QLearner, FriendQLearner, FoeQLearner, CEQLearner, RandomAgent
+import numpy as np
+
+from project3.agents import QLearner, FriendQLearner, FoeQLearner, RandomAgent, CEQLearner
 from project3.external.emoudahi_env import SoccerEnv
+from project3.utils.file_util import save_results
 from project3.utils.log_util import logger
 from project3.utils.plot_util import plot_results
 from project3.vars import *
-import numpy as np
 
 # Q seed = 0
-# Friend-Q seed =
+# Friend-Q seed = 0
 # Foe-Q seed =
 # uCE-Q seed =
 np.random.seed(0)
@@ -33,6 +35,7 @@ t = 0
 player_wins = 0
 op_wins = 0
 total_games = 0
+last_game = False
 
 try:
     while t < MAX_STEPS:
@@ -40,6 +43,11 @@ try:
         state = env.reset()
         # Force restart in control state
         env.s = CONTROL_STATE
+
+        if t > MAX_STEPS - 1000 and not last_game:
+            logger.info('t = {} : Rendering a late game (hopefully converged by now)'.format(t))
+            last_game = True
+
         states_visited.add(state)
         done = False
 
@@ -52,15 +60,21 @@ try:
         while not done and t < MAX_STEPS:
             t += 1
 
+            if last_game:
+                env.render()
+
             if t % 10000 == 0 and total_games > 0:
                 logger.info('{}\t{}\t{}'.format(
                     t,
                     round(1. * player_wins / total_games, 2),
                     round(1. * op_wins / total_games, 2)))
 
-            # Execute step (zero-sum game)
+            # 1. Simulate action a_i from state s
             new_state, reward, done, details = env.step(env.encode_action(action, op_action))
             op_reward = -reward
+
+            # 2. Observe action profile a_{-i}, reward R(s,a), and next state s'
+            # Done: op_action, op_reward, new_state
 
             if DEBUG:
                 env.render()
@@ -68,7 +82,7 @@ try:
             # Quit loop and reset environment
             if done:
 
-                # Manually set terminal state Q value as immediate reward and nothing else
+                # Manually set terminal state Q value as normalized reward and nothing else
                 if isinstance(player, QLearner):
                     player.Q[state, action] = reward / 100.
                 else:
@@ -81,28 +95,23 @@ try:
                 delta_Q = 0
                 op_delta_Q = 0
 
-                # Trackers
+                # Track game and win count
                 if reward > 0:
                     player_wins += 1
                 elif reward < 0:
                     op_wins += 1
                 total_games += 1
 
-            # Select next action
+            # 3. Select policy pi(s') for new state according to selection mechanism f(Q(s'))
+            # 4. Update V(s') and Q(s, a) for both players according to selected joint policy
             else:
-                if type(player) == QLearner:
-                    action, delta_Q = player.query(state, action, new_state, reward)
-                else:
-                    action, delta_Q = player.query(state, action, op_action, new_state, reward)
-
-                if type(opponent) == QLearner:
-                    op_action, op_delta_Q = opponent.query(state, op_action, new_state, op_reward)
-                else:
-                    op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward)
+                action, delta_Q = player.query(state, action, op_action, new_state, reward, opponent.Q)
+                op_action, op_delta_Q = opponent.query(state, op_action, action, new_state, op_reward, opponent.Q)
 
             # Track updates per timestep
             # See Greenwald (2003)
-            if state == CONTROL_STATE and action == env.Action.S and (isinstance(player, QLearner) or op_action == env.Action.Stick):
+            if state == CONTROL_STATE and action == env.Action.S and (
+                    isinstance(player, QLearner) or op_action == env.Action.Stick):
                 if delta_Q == 0:
                     control_dQ = control_state_Q_updates[-1]
                 else:
@@ -113,8 +122,11 @@ try:
             else:
                 control_dQ = 0
 
+            # 5. Update state s -> s', action a -> a' (DONE: action selected same time as delta_Q)
             state = new_state
             states_visited.add(new_state)
+
+            # 6. Decay alpha (DONE: update inside agent.query())
 
             control_state_Q_updates.append(control_dQ)
             all_Q_updates.append(delta_Q)
@@ -124,6 +136,8 @@ try:
             all_rar.append(player.epsilon)
 
             if done:
+                if last_game:
+                    last_game = False
                 break
 
 except KeyboardInterrupt:
@@ -132,4 +146,4 @@ except KeyboardInterrupt:
 logger.warn('Actual updates in state s with action SOUTH and op_action STICK: {}'.format(actual_updates))
 plot_results(control_state_Q_updates, title=player.algo_name)
 
-# plot_results(all_Q_updates, title=player.algo_name)
+save_results(player, control_state_Q_updates)
